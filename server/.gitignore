@@ -1,0 +1,10 @@
+# Logs
+logs
+*.log
+*.pdf
+
+package-lock.json
+
+node_modules/
+public/quoterequested
+/public
