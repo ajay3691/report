@@ -1,0 +1,127 @@
+.custom-file-input {
+    position: relative; /* Create a positioning context for the label */
+    border: 1px solid #ccc; /* Add border to the custom file input */
+    border-radius: 0.25rem; /* Match border radius */
+    overflow: hidden; /* Prevent overflow of the file input */
+    height: 48px;
+  }
+  
+  .file-input {
+    position: absolute; /* Overlay the actual input */
+    top: 0; /* Align with the top */
+    right: 0; /* Align with the right */
+    opacity: 0; /* Hide the input but keep it functional */
+    height: 100%; /* Ensure it covers the height of the parent */
+    width: 100%; /* Ensure it covers the width of the parent */
+    cursor: pointer; /* Change cursor on hover */
+    
+  }
+  
+  .file-label {
+    display: flex; /* Use flex to align items */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    background-color: transparent; /* Remove background color */
+    color: rgb(57, 55, 55); /* Set text color */
+    padding: 0.375rem 0.75rem; /* Match padding with other inputs */
+    height: 40px; /* Set fixed height */
+    line-height: 1.5; /* Line height for better text alignment */
+    cursor: pointer; /* Change cursor on hover */
+  }
+  
+  .file-input:focus + .file-label {
+    outline: none; /* Remove outline on focus */
+  }
+  
+  /* Display selected file name */
+  .file-input + .file-label:after {
+    content: attr(data-file-name); /* Display the selected file name */
+    display: block; /* Show as block */
+    margin-top: 5px; /* Space above file name */
+    font-size: 14px; /* Adjust font size */
+    color: #666; /* Change color for better visibility */
+  }
+  
+  
+.container {
+    max-width: 100%; /* Full width */
+    margin: auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .form-label {
+    font-weight:inherit;
+    margin-bottom: 5px;
+    display: block;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+  }
+  
+  .form-control:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  
+  .btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+  
+  .btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .alert {
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  .alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+  
+  .alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+  
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+  }
+  
+  .col {
+    flex: 1; /* Use full available space */
+    padding: 0 10px;
+    min-width: 200px; /* Set a minimum width */
+  }
+  

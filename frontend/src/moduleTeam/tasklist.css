@@ -1,0 +1,29 @@
+/* Add this to your CSS file */
+.table-wrapper {
+    max-height: 400px; /* Set the maximum height for the table body */
+    overflow-y: auto; /* Enable vertical scrolling */
+    display: block; /* Make it a block element to manage overflow */
+  }
+  
+  .table {
+    width: 100%; /* Full width of the table */
+  }
+  
+  .table-header {
+    display: table; /* Keep the header part of the table */
+    table-layout: fixed; /* Prevent width changes */
+    width: 100%; /* Ensure full width */
+  }
+  
+  .table-body {
+    display: block; /* Enable block display for the body */
+    max-height: 400px; /* Set the max height */
+    overflow-y: auto; /* Enable scrolling for the body */
+  }
+  
+  .table-row {
+    display: table; /* Ensure rows behave like table rows */
+    width: 100%; /* Full width */
+    table-layout: fixed; /* Maintain table layout */
+  }
+  

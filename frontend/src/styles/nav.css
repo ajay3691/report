@@ -1,0 +1,34 @@
+.sub_nav{
+    background-color: rgb(11, 12, 67);
+    /* border-bottom-left-radius: 5px; */
+    border-bottom-right-radius: 5px;
+    border-bottom: 1px solid gainsboro;
+    /* background: whitesmoke; */
+    /* color: black; */
+    clip-path: polygon(41% 0, 100% 0%, 100% 100%, 0% 100%);
+}
+.logo{
+    position: relative;
+    margin-top: 20%;
+    margin-right: 20%;
+    height: 65px;
+}
+.navbar__link{
+    background-color: aqua;
+}
+.navbar__link--active {
+    background-color: red;
+  }
+@media only screen and (max-width: 639px) {
+    .nav_hide{
+        display: none;
+    }
+  }
+@media only screen and (max-width: 767px) {
+    .logo{
+        margin-top: 0;
+    }
+    .sub_nav{
+        clip-path: none;
+    }
+  }

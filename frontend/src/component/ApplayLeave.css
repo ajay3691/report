@@ -1,0 +1,133 @@
+.apply-leave-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 90vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.apply-leave-card .row {
+  display: flex;
+  justify-content: space-between; 
+  gap: 20px; 
+}
+.apply-leave-card {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.apply-leave-title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.apply-leave-alert {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.apply-leave-alert-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.apply-leave-alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.apply-leave-form-group {
+  margin-bottom: 15px;
+}
+
+.apply-leave-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.apply-leave-input,
+.apply-leave-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.apply-leave-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.apply-leave-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .apply-leave-card {
+    padding: 15px;
+  }
+
+  .apply-leave-title {
+    font-size: 20px;
+  }
+
+  .apply-leave-input,
+  .apply-leave-select {
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  .apply-leave-btn {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .apply-leave-alert {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .apply-leave-card {
+    padding: 10px;
+  }
+
+  .apply-leave-title {
+    font-size: 18px;
+  }
+
+  .apply-leave-input,
+  .apply-leave-select {
+    padding: 5px;
+    font-size: 12px;
+  }
+
+  .apply-leave-btn {
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  .apply-leave-alert {
+    font-size: 12px;
+  }
+
+  .apply-leave-form-group {
+    margin-bottom: 10px;
+  }
+}

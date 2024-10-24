@@ -1,0 +1,36 @@
+/* General styles for the table */
+table {
+    border-collapse: collapse; /* Collapse borders for a cleaner look */
+    width: 100%; /* Full width */
+  }
+  
+  /* Styles for table rows */
+  tr {
+    transition: background-color 0.3s; /* Smooth hover effect */
+  }
+  
+  /* Hover effect for rows */
+  tr:hover {
+    background-color: #f9fafb; /* Light gray for hover */
+  }
+  
+  /* Borders for cells */
+  td {
+    border: 1px solid #e5e7eb; /* Light gray border */
+    padding: 10px; /* Consistent padding */
+  }
+  
+  /* Styles for specific row spans */
+  .border-l-4 {
+    border-left-width: 4px; /* Custom left border for grouped projects */
+  }
+  
+  .border-blue-500 {
+    border-color: #3b82f6; /* Blue color for project grouping */
+  }
+  
+  /* Remove top border for the first row of the same project */
+  .border-t-0 {
+    border-top: none; /* No top border for the same project */
+  }
+  
