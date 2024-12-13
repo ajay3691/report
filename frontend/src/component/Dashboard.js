@@ -8,6 +8,7 @@ import ChangePassword from "./ChangePassword";
 import AddEmployee from "./AddEmployees";
 import LeveStatus from "./LeveStatus";
 import ApplayLeave from "./ApplayLeave";
+import LeaveAcces from "./LeaveAcces";
 
 const EmployeeReport = React.lazy(() => import(/* webpackPrefetch: true */ "./EmployeeReport"));
 const EmployeeTask = React.lazy(() => import(/* webpackPrefetch: true */ "./Tasks/Employeetask"));
@@ -17,6 +18,7 @@ const IdCardReportEdit = React.lazy(() => import(/* webpackPrefetch: true */ "./
 const ReportHistory = React.lazy(() => import(/* webpackPrefetch: true */ "./ReportHistory"));
 const EmployeeList = React.lazy(() => import(/* webpackPrefetch: true */ "./EmployeeList"));
 const TeamReport = React.lazy(() => import(/* webpackPrefetch: true */ "./TeamReport"));
+const PunchReport = React.lazy(() => import(/* webpackPrefetch: true */ "./PunchReport"));
 
 
 const Dashboard = () => {
@@ -80,10 +82,10 @@ const Dashboard = () => {
       </button>
 
       <aside ref={sidebarRef} id="sidebar-multi-level-sidebar" className={isToggled ? "sidebar active" : "sidebar"} aria-label="Sidebar">
-        <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50">
+        <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50" style={{backgroundColor:"#f5f5f5"}}>
           <ul className="space-y-2 font-medium">
             <li>
-              <Link to="/dashboard" className="flex justify-center items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+              <Link to="/dashboard" className="flex justify-center items-center p-2 text-gray-900 rounded-lg bg-gray-100 group">
                 <span className="ms-3 mr-4">
                   <img alt="logo" className="h-14 w-auto" src={logo}></img>
                 </span>
@@ -96,7 +98,7 @@ const Dashboard = () => {
                   <svg className={`flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500 ${location.pathname === "/dashboard" && "text-orange-500"}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 3v4a1 1 0 0 1-1 1H5m4 8h6m-6-4h6m4-8v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1Z" />
                   </svg>
-                  <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Employee Report</span>
+                  <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap "  >Employee Report</span>
                 </Link>
               </li>
               <li>
@@ -195,12 +197,29 @@ const Dashboard = () => {
                     </li>
 
                     <li>
-                      <Link to="/dashboard/report-history" className={`flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group ${location.pathname === "/dashboard/report-history" && "bg-gray-100"}`}>
-                        <svg className={`flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500 ${location.pathname.startsWith("/dashboard/report-history") && "text-orange-500"}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
+                    <Link to="/dashboard/report-history" className={`flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group ${location.pathname === "/dashboard/report-history" && "bg-gray-100"}`}>
+                      <svg className={`flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500 ${location.pathname.startsWith("/dashboard/report-history") && "text-orange-500"}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 2h6a2 2 0 0 1 2 2v2H7V4a2 2 0 0 1 2-2ZM7 8h10v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8ZM12 14v-2m0 0v-2m0 4l2 2m-2-2-2 2" />
+                      </svg>
+                      <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Report History</span>
+                    </Link>
 
-                        <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Report History</span>
+                    </li>
+                    <li>
+                      <Link to="/dashboard/PunchReport" className={`flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group ${location.pathname === "/dashboard/PunchReport" && "bg-gray-100"}`}>
+                        <svg className={`flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500 ${location.pathname.startsWith("/dashboard/PunchReport") && "text-orange-500"}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z" />
+                        </svg>
+                        <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Punch Report</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/dashboard/leaveAcces" className={`flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group ${location.pathname === "/dashboard/leaveAcces" && "bg-gray-100"}`}>
+                      <svg className="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 16h6M9 8h6M19 3H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+                      </svg>
+
+                        <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Leave Status</span>
                       </Link>
                     </li>
                     <li>
@@ -253,12 +272,12 @@ const Dashboard = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/dashboard/report-history" className={`flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group ${location.pathname.startsWith("/dashboard/report-history") && "bg-gray-100"}`}>
-                  <svg className={`flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500 ${location.pathname.startsWith("/dashboard/report-history") && "text-orange-500"}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                  </svg>
-                  <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Report History</span>
-                </Link>
+              <Link to="/dashboard/report-history" className={`flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group ${location.pathname === "/dashboard/report-history" && "bg-gray-100"}`}>
+                <svg className={`flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-orange-500 ${location.pathname.startsWith("/dashboard/report-history") && "text-orange-500"}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 2h6a2 2 0 0 1 2 2v2H7V4a2 2 0 0 1 2-2ZM7 8h10v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8ZM12 14v-2m0 0v-2m0 4l2 2m-2-2-2 2" />
+                </svg>
+                <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Report History</span>
+              </Link>
               </li>
              
               <li>
@@ -327,6 +346,8 @@ const Dashboard = () => {
             <Route path="/teamReport/*" element={<TeamReport />} />
             <Route path="/applayLeave" element={<ApplayLeave />} />
             <Route path="/leveStatus" element={<LeveStatus />} />
+            <Route path="/leaveAcces" element={<LeaveAcces />} />
+            <Route path="/punchReport" element={<PunchReport />} />
           </Routes>
         </div>
       </div>

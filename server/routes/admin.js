@@ -10,7 +10,10 @@ router.post('/employee_project_list',reports.employee_list);
 router.post('/reportHistory_admin',reports.reportHistory_admin);
 
 router.post('/applyLeave',reports.applyLeave);
+router.put('/updateLeaveStatus',reports.updateLeaveStatus);
 router.post('/getLeaveApplications',reports.getLeaveApplications);
+router.post('/getLeaveRequestsAll',reports.getLeaveRequestsAll);
+router.post('/dailypunch',reports.dailypunch);
 
 
 

@@ -3,7 +3,7 @@ const Sequelize = require("sequelize");
 const {connection} = require("../dbConfig");
 
 const Op = Sequelize.Op;
-exports.createtask = async (req, res, next) => {
+/* exports.createtask = async (req, res, next) => {
   const {
     id,
     employeeId,
@@ -82,7 +82,133 @@ exports.createtask = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+}; */
+exports.createtask = async (req, res, next) => {
+  const {
+    id,
+    employeeId,
+    date,
+    customer,
+    task,
+    estimatedTime,
+    startTime,
+    endTime,
+    taskStatus,
+    reasonForIncomplete,
+    remarks,
+    employeeName,
+  } = req.body;
+
+  try {
+    // Count total tasks created today
+    const total = await Task.count({
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(new Date().setHours(0, 0, 0, 0)), // Start of today
+          [Op.lt]: new Date(new Date().setHours(23, 59, 59, 999)), // End of today
+        },
+      },
+    });
+
+    if (id) {
+      // Update existing task
+      const [updated] = await Task.update(
+        {
+          date,
+          employeeId,
+          customer,
+          task,
+          estimatedTime,
+          startTime,
+          endTime,
+          taskStatus,
+          reasonForIncomplete,
+          remarks,
+          employeeName,
+        },
+        { where: { id } }
+      );
+
+      if (updated) {
+        // If the task is not completed, replicate it for the next day
+        if (
+          taskStatus.toLowerCase() !== "completed" &&
+          taskStatus.toLowerCase() !== "complete"
+        ) {
+          const nextDay = new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000); // Next day
+          await Task.create({
+            date: nextDay,
+            employeeId,
+            customer,
+            task,
+            estimatedTime,
+            startTime,
+            endTime,
+            taskStatus,
+            reasonForIncomplete,
+            remarks,
+            employeeName,
+          });
+        }
+
+        res.send({
+          status: "Success",
+          message: "Report updated successfully",
+          data: { id },
+        });
+      } else {
+        res
+          .status(404)
+          .send({ status: "Failure", message: "Report not found" });
+      }
+    } else {
+      // Create a new task
+      const report = await Task.create({
+        date,
+        employeeId,
+        customer,
+        task,
+        estimatedTime,
+        startTime,
+        endTime,
+        taskStatus,
+        reasonForIncomplete,
+        remarks,
+        employeeName,
+      });
+
+      // If the task is not completed, replicate it for the next day
+      if (
+        taskStatus.toLowerCase() !== "completed" &&
+        taskStatus.toLowerCase() !== "complete"
+      ) {
+        const nextDay = new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000); // Next day
+        await Task.create({
+          date: nextDay,
+          employeeId,
+          customer,
+          task,
+          estimatedTime,
+          startTime,
+          endTime,
+          taskStatus,
+          reasonForIncomplete,
+          remarks,
+          employeeName,
+        });
+      }
+
+      res.send({
+        status: "Success",
+        message: "Report saved successfully",
+        data: { id: report.id },
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
 };
+
 exports.getTaskById = async (req, res, next) => {
   const { employeeId, id } = req.params; // Get employeeId and id from route parameters
 

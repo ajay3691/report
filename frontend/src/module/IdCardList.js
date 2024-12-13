@@ -120,26 +120,29 @@ const IdCardList = () => {
     acc[key].push(curr);
     return acc;
   }, {});
+  const today = new Date().toISOString().split("T")[0]; // Get today's date in "YYYY-MM-DD" format
 
   return (
     <>
       {error && <div className="text-red-600 mb-4">{error}</div>}
       <div date-rangepicker className="my-4 flex items-center">
         <div className="flex">
-          <input
-            type="date"
-            name="fromDate"
-            value={fromDate}
-            onChange={handleDateChange}
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
-          />
-          <input
-            type="date"
-            name="toDate"
-            value={toDate}
-            onChange={handleDateChange}
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
-          />
+        <input
+          type="date"
+          name="fromDate"
+          value={fromDate}
+          onChange={handleDateChange}
+          max={today}
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
+        />
+        <input
+          type="date"
+          name="toDate"
+          value={toDate}
+          onChange={handleDateChange}
+          max={today}
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
+        />
         </div>
       </div>
 

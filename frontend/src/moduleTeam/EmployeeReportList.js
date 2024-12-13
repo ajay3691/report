@@ -68,16 +68,17 @@ const EmployeeReportList = () => {
   };
 
   const totalPages = Math.ceil(totalRecords / maxDisplayCount);
-
+  const today = new Date().toISOString().split("T")[0];
   return (
     <div className="container mx-auto">
       <h2 className="text-2xl font-bold mb-4">Report List</h2>
       <div className="flex mb-4">
-        <input
+      <input
           type="date"
           name="fromDate"
           value={fromDate}
           onChange={handleDateChange}
+          max={today}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
         />
         <input
@@ -85,6 +86,7 @@ const EmployeeReportList = () => {
           name="toDate"
           value={toDate}
           onChange={handleDateChange}
+          max={today}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
         />
         <select

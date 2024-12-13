@@ -41,6 +41,7 @@ const Login = () => {
         // Save employeeId and employeeName to local storage
         localStorage.setItem('employeeId', data.employeeId);
         localStorage.setItem('employeeName', data.employeeName);
+        localStorage.setItem('userName', data.userName);
 
         navigate(data.userType === "Admin" ? "/dashboard/employee-list" : "/dashboard");
       }

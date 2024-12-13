@@ -188,35 +188,29 @@ exports.applyLeave = async (req, res, next) => {
   const { Employee_id, userName, leaveTypes, leaveTimes, startDate, endDate, reason } = req.body;
 
   try {
-    // Log the received values
     console.log("Request body:", req.body);
 
-    // Convert startDate and endDate to Date objects
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Calculate the difference in days
     const timeDifference = end.getTime() - start.getTime();
-    let noOfDays = timeDifference / (1000 * 3600 * 24) + 1; // Add 1 to include the start date
+    let noOfDays = timeDifference / (1000 * 3600 * 24) + 1; 
 
-    // If startDate and endDate are the same, check leaveTimes
     if (startDate === endDate) {
       if (leaveTimes === "Full Day") {
-        noOfDays = 1; // Full day means 1 day of leave
+        noOfDays = 1;
       } else if (leaveTimes === "Halfday") {
-        noOfDays = 0; // Half day means 0 days of leave
+        noOfDays = 0;
       } else if (leaveTypes === "Permission") {
-        noOfDays = 0; // Permission means no full days of leave
+        noOfDays = 0; 
       }
     } else {
-      // If multiple days, adjust noOfDays based on leaveTimes for the last day
       if (leaveTimes === "Halfday") {
-        noOfDays -= 0.5; // Reduce by 0.5 if the leaveTimes is half day
+        noOfDays -= 0.5; 
       }
     }
 
-    // Step 1: Check if "Casual Leave" has been used this month
-    const currentMonth = start.getMonth() + 1; // getMonth() returns 0-indexed month
+    const currentMonth = start.getMonth() + 1; 
     const currentYear = start.getFullYear();
 
     const checkCasualLeaveQuery = `
@@ -232,7 +226,6 @@ exports.applyLeave = async (req, res, next) => {
       return res.status(400).send({ status: "Error", message: "Casual Leave has already been used this month." });
     }
 
-    // Step 2: Check if "Saturday Off" has been used this month
     const checkSaturdayOffQuery = `
       SELECT * FROM leaverequest_form
       WHERE Employee_id = ? 
@@ -246,30 +239,30 @@ exports.applyLeave = async (req, res, next) => {
       return res.status(400).send({ status: "Error", message: "Saturday Off has already been used this month." });
     }
 
-    // Step 3: Insert leave application into the database
     const insertLeaveQuery = `
       INSERT INTO leaverequest_form (Employee_id, userName, leaveTypes, leaveTimes, startDate, endDate, reason, noOfDays, status) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
     `;
 
     const [result] = await attendanceConnection.execute(insertLeaveQuery, [
-      Employee_id !== undefined ? Employee_id : null, // Use null if Employee_id is undefined
-      userName !== undefined ? userName : null,     // Use null if userName is undefined
-      leaveTypes !== undefined ? leaveTypes : null, // Use null if leaveTypes is undefined
-      leaveTimes !== undefined ? leaveTimes : null, // Use null if leaveTimes is undefined
-      startDate !== undefined ? startDate : null,   // Use null if startDate is undefined
-      endDate !== undefined ? endDate : null,       // Use null if endDate is undefined
-      reason !== undefined ? reason : null,         // Use null if reason is undefined
-      noOfDays // Computed value for noOfDays
+      Employee_id !== undefined ? Employee_id : null, 
+      userName !== undefined ? userName : null,    
+      leaveTypes !== undefined ? leaveTypes : null, 
+      leaveTimes !== undefined ? leaveTimes : null, 
+      startDate !== undefined ? startDate : null,   
+      endDate !== undefined ? endDate : null,       
+      reason !== undefined ? reason : null,         
+      noOfDays 
     ]);
 
-    // Step 4: Send a success response
     res.send({ status: "Success", message: "Leave applied successfully", data: { Id: result.insertId } });
 
   } catch (error) {
     next(error);
   }
 };
+
+//employee get
 exports.getLeaveApplications = async (req, res, next) => {
   const { Employee_id, startDate, endDate } = req.body;
 
@@ -300,8 +293,220 @@ exports.getLeaveApplications = async (req, res, next) => {
   }
 };
 
+//admin get
+/* exports.getLeaveRequestsAll = async (req, res, next) => {
+  const { fromDate, toDate } = req.body;
+
+  try {
+    if (!fromDate || !toDate) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Missing required parameters: fromDate or toDate",
+      });
+    }
+
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+
+    if (isNaN(fromDateObj) || isNaN(toDateObj)) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Invalid date format. Please provide valid dates.",
+      });
+    }
+
+    // Fetch leave requests from 'leaverequest_form' table in the 'attendanceConnection' database
+    const fetchLeaveRequestsQuery = `
+      SELECT 
+        *
+      FROM 
+        leaverequest_form lr
+      WHERE 
+        lr.createdAt BETWEEN ? AND ?
+    `;
+
+    const [leaveRequests] = await attendanceConnection.execute(fetchLeaveRequestsQuery, [fromDateObj, toDateObj]);
+
+    if (leaveRequests.length === 0) {
+      return res.status(404).json({
+        status: "Error",
+        message: "No leave requests found in the given date range",
+      });
+    }
+
+    // Fetch employee names from the 'tbl_userDetails' table in the 'connection' database
+    const fetchEmployeeNamesQuery = `
+      SELECT 
+        employeeId, 
+        name AS employeeName 
+      FROM 
+        tbl_userDetails
+    `;
+
+    const [employeeDetails] = await connection.execute(fetchEmployeeNamesQuery);
+  console.log("employeeDetails",employeeDetails)
+    
+  // Create a map of Employee_id to employeeName
+    const employeeMap = employeeDetails.reduce((acc, employee) => {
+      acc[employee.Employee_id] = employee.employeeName;
+      return acc;
+    }, {});
+
+    // Merge employee name into leaveRequests
+    leaveRequests.forEach((leave) => {
+      leave.employeeName = employeeMap[leave.employeeName] || "Unknown"; // Default to "Unknown" if employee is not found
+    });
+    console.log("employeeMap",employeeMap)
+
+    // Return the merged result
+    res.status(200).json({
+      status: "Success",
+      message: "Leave requests retrieved successfully",
+      data: leaveRequests,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+ */
+exports.getLeaveRequestsAll = async (req, res, next) => {
+  const { fromDate, toDate } = req.body;
+
+  try {
+    if (!fromDate || !toDate) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Missing required parameters: fromDate or toDate",
+      });
+    }
+
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+
+    if (isNaN(fromDateObj) || isNaN(toDateObj)) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Invalid date format. Please provide valid dates.",
+      });
+    }
+
+    // Fetch leave requests from 'leaverequest_form' table in the 'attendanceConnection' database
+    const fetchLeaveRequestsQuery = `
+      SELECT 
+        *
+      FROM 
+        leaverequest_form lr
+      WHERE 
+        lr.createdAt BETWEEN ? AND ?;
+    `;
+
+    const [leaveRequests] = await attendanceConnection.execute(fetchLeaveRequestsQuery, [fromDateObj, toDateObj]);
+
+    if (leaveRequests.length === 0) {
+      return res.status(404).json({
+        status: "Error",
+        message: "No leave requests found in the given date range",
+      });
+    }
+
+    // Fetch employee details from 'tbl_userDetails' table in the 'connection' database
+    const fetchEmployeeNamesQuery = `
+      SELECT 
+        employeeId, 
+        name AS employeeName 
+      FROM 
+        tbl_userDetails;
+    `;
+
+    const [employeeDetails] = await connection.execute(fetchEmployeeNamesQuery);
+    console.log("employeeDetails", employeeDetails);
+
+    // Create a map of employeeId to employeeName from the employeeDetails
+    const employeeMap = employeeDetails.reduce((acc, employee) => {
+      acc[employee.employeeId] = employee.employeeName;  // Note: ensure the property name matches exactly.
+      return acc;
+    }, {});
+    console.log("employeeMap", employeeMap);
+
+    // Merge employee name into leaveRequests
+    leaveRequests.forEach((leave) => {
+      // Check if the employeeId from leaveRequest exists in employeeMap, if so, assign the employeeName
+      leave.employeeName = employeeMap[leave.Employee_id] || "Unknown"; // Default to "Unknown" if employee is not found
+    });
+
+    // Return the merged result
+    res.status(200).json({
+      status: "Success",
+      message: "Leave requests retrieved successfully",
+      data: leaveRequests,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 exports.updateLeaveStatus = async (req, res, next) => {
+  const { leaveId, status, remarks } = req.body;
+
+  try {
+    if (!leaveId || !status) {
+      return res.status(400).json({ status: "Error", message: "Missing required parameters: leaveId or status" });
+    }
+
+    const allowedStatuses = ["Accept", "Reject", "Pending"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ status: "Error", message: `Invalid status. Allowed values are: ${allowedStatuses.join(", ")}` });
+    }
+
+    let updateLeaveQuery;
+    let queryParams;
+
+    const currentDate = new Date();
+
+    if (status === "Accept") {
+      updateLeaveQuery = `
+        UPDATE leaverequest_form 
+        SET status = ?, acceptDate = ?, remarks = ? 
+        WHERE lid = ?
+      `;
+      queryParams = [status, currentDate, remarks !== undefined ? remarks : null, leaveId];
+    } else if (status === "Reject") {
+      updateLeaveQuery = `
+        UPDATE leaverequest_form 
+        SET status = ?, remarks = ? 
+        WHERE lid = ?
+      `;
+      queryParams = [status, remarks !== undefined ? remarks : null, leaveId];
+    } else {
+      updateLeaveQuery = `
+        UPDATE leaverequest_form 
+        SET status = ?, remarks = ? 
+        WHERE lid = ?
+      `;
+      queryParams = [status, remarks !== undefined ? remarks : null, leaveId];
+    }
+
+    const [result] = await attendanceConnection.execute(updateLeaveQuery, queryParams);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ status: "Error", message: "Leave request not found" });
+    }
+
+    res.status(200).json({
+      status: "Success",
+      message: "Leave status updated successfully",
+      data: { leaveId, updatedStatus: status, remarks, acceptDate: status === "Accepted" ? currentDate : null }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+exports.updateLeaveStatus1 = async (req, res, next) => {
   const { leaveIds, status, remarks } = req.body;
 
   try {
@@ -346,4 +551,31 @@ exports.getEmployeeLeaveReport = async (req, res, next) => {
     next(error);
   }
 };
+
+
+exports.dailypunch = async (req, res) => {
+    const { from_date, to_date } = req.body;
+
+    try {
+        let query = '';
+        let params = [];
+
+        if (from_date && to_date) {
+            // If date range is provided
+            query = `SELECT * FROM tbl_dailypunch WHERE CAST(createdAt AS DATE) BETWEEN ? AND ?`;
+            params = [from_date, to_date];
+        } else {
+            // Default to today's data
+            query = `SELECT * FROM tbl_dailypunch WHERE CAST(createdAt AS DATE) = CURRENT_DATE`;
+        }
+
+        const [rows] = await attendanceConnection.execute(query, params);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        res.status(500).send('Server error');
+    }
+};
+
+
 

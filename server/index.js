@@ -1,63 +1,49 @@
-const express=require('express')
-const morgan=require('morgan')
-const app=express()
-const cors=require('cors')
-const { errorHandler } = require('./errorHandler')
-
-
+const express = require('express');
+const cors = require('cors');
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
+const path = require('path');
+const morgan = require('morgan');
+const { errorHandler } = require('./errorHandler');
+
+const app = express();
 const swaggerJsDoc = YAML.load("./api.yaml");
 
-const sequelize = require ('./db/sequelize.js');
-
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
-app.use(cors())
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 app.use(morgan('tiny'));
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerJsDoc));
 
-const report=require('./routes/report')
-app.use("/",report)
+const report = require('./routes/report');
+app.use("/", report);
 
-const task = require ('./routes/task')
+const admin = require('./routes/admin');
+app.use("/", admin);
+
+const task = require('./routes/task');
 app.use('/api', task);
-
-const admin=require('./routes/admin')
-app.use("/",admin)
 
 app.use(errorHandler);
 
-app.get('/', (req, resp) => {
-    resp.send("hello express");
-  });
+/* // Serve static files from the React app in frontend/build
+app.use(express.static(path.join(__dirname, 'frontend', 'build')));
 
-app.listen(4001,()=>{
-    console.log("listen 4000")
-})
-/* sequelize.authenticate()
-    .then(async () => {
-        console.log('Database connection has been established successfully.');
-        // Get the name of the connected database
-        const dbName = sequelize.config.database;
-        console.log('Connected to database:', dbName);
-
-        // Get the names of all tables in the connected database
-        const tableNames = await sequelize.getQueryInterface().showAllTables();
-        console.log('Tables in the database:', tableNames.join(', '));
-
-        // Start the Express server
-        /* app.listen(PORT, HOST, () => {
-            console.log(`Server running on http://${HOST}:${PORT}`);
-        }); 
-        app.listen(4001, () => {
-            console.log('Server is running on port 4000');
-          });
-    })
-    .catch(error => {
-        console.error('Unable to connect to the database:', error);
-    });
+// Handle all other routes for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
+});
  */
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
+// Handle all other routes for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
 
+// Set up the server to listen on port 83 (or a custom port if defined in the environment variables)
+const port = process.env.PORT || 4001;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});;
