@@ -4,6 +4,9 @@ const router =express.Router();
 const reports =require("../controller/admin");
 
 router.post('/employee_list',reports.employee_list);
+router.post('/addEmployee',reports.addEmployee);
+//router.post('/uploadProfileImage',reports.uploadProfileImage);
+
 router.post('/create_project',reports.create_project);
 router.post('/delete_project',reports.delete_project);
 router.post('/employee_project_list',reports.employee_list);

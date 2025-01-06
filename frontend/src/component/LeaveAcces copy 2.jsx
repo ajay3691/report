@@ -6,7 +6,6 @@ const LeaveApplications = () => {
   const [leaveApplications, setLeaveApplications] = useState([]);
   const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);  // Default to current date
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);  // Default to current date
-  const [remarks, setRemarks] = useState({});
 
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [employees, setEmployees] = useState([]);
@@ -64,7 +63,7 @@ const LeaveApplications = () => {
 
   const handleAccept = (id, reason, remarks) => {
     axios
-      .put(`${process.env.REACT_APP_API_URL}/updateLeaveStatus`, {
+      .put(`${process.env.REACT_APP_API_URL}1/updateLeaveStatus`, {
         leaveId: id,
         remarks,
         status: "Accepted",
@@ -93,13 +92,7 @@ const LeaveApplications = () => {
         console.error("Error rejecting leave:", error);
       });
   };
-  const handleRemarksChange = (lid, event) => {
-    setRemarks((prevRemarks) => ({
-      ...prevRemarks,
-      [lid]: event.target.value,
-    }));
-  };
-  
+
   return (
     <div style={containerStyle}>
       {/* Fixed Date Picker Section */}
@@ -182,12 +175,11 @@ const LeaveApplications = () => {
               </div>
               <div><strong>Reason:</strong> {leave.reason}</div>
               <textarea
-      style={textareaStyle}
-      placeholder="Add Remarks"
-      id={`remarks-${leave.lid}`}
-      value={remarks[leave.lid] || leave.rejectReason || ""}
-      onChange={(e) => handleRemarksChange(leave.lid, e)}
-    />
+                style={textareaStyle}
+                placeholder="Add Remarks"
+                id={`remarks-${leave.lid}`}
+                value={leave.remarks }
+              />
               {/*  <textarea
                   placeholder="Add Remarks"
                   style={{

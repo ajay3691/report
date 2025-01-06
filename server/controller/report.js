@@ -1,4 +1,4 @@
-const {connection} = require("../dbConfig");
+const {connection,attendanceConnection} = require("../dbConfig");
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
@@ -17,7 +17,7 @@ exports.changePassword = async (req, res, next) => {
 
     // Fetch the user's current hashed password from the database
     const sqlGetPassword = `SELECT password FROM tbl_userDetails WHERE employeeId = ?`;
-    const [rows] = await connection.execute(sqlGetPassword, [employeeId]);
+    const [rows] = await attendanceConnection.execute(sqlGetPassword, [employeeId]);
 
     if (rows.length === 0) {
       return res.status(404).send({ status: "Error", message: "User not found" });
@@ -37,7 +37,7 @@ exports.changePassword = async (req, res, next) => {
     
     // Update the user's password in the database
     const sqlUpdatePassword = `UPDATE tbl_userDetails SET password = ? WHERE employeeId = ?`;
-    await connection.execute(sqlUpdatePassword, [hashedNewPassword, employeeId]);
+    await attendanceConnection.execute(sqlUpdatePassword, [hashedNewPassword, employeeId]);
 
     res.send({ status: "Success", message: "Password has been changed successfully" });
 
@@ -57,7 +57,7 @@ exports.forgotPassword = async (req, res, next) => {
 
     // Check if user exists
     const sqlUser = `SELECT employeeId, email FROM tbl_userDetails WHERE isActive='1' AND email=?`;
-    const [userResult] = await connection.execute(sqlUser, [email]);
+    const [userResult] = await attendanceConnection.execute(sqlUser, [email]);
 
     if (userResult.length === 0) {
       return res.status(404).send({ status: "Error", message: "Email not found" });
@@ -150,7 +150,7 @@ exports.resetPassword = async (req, res, next) => {
     // Update the user's password (assuming you have a hashing function)
     const hashedPassword = crypto.createHash('md5').update(newPassword).digest('hex'); // Hashing the new password
     const sqlUpdatePassword = `UPDATE tbl_userDetails SET password=? WHERE employeeId=?`;
-    await connection.execute(sqlUpdatePassword, [hashedPassword, employeeId]);
+    await attendanceConnection.execute(sqlUpdatePassword, [hashedPassword, employeeId]);
 
     // Clean up the used OTP
     delete otpStore[employeeId];
@@ -162,62 +162,7 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
-exports.addEmployee= async (req, res) => {
-  const {
-    employeeId, name, userName, password, userType, designation, domain, dateOfJoining,
-    mobileNumber, mobileNumber2, email, email2, address, profileUrl, dateOfBirth,
-    bankName, bankBranch, accountNo, ifscNo, salary
-  } = req.body;
 
-  try {
-    // Validate required fields
-    if (!employeeId || !name || !userName || !password || !email || !mobileNumber) {
-      return res.status(400).json({
-        status: "Error",
-        message: "Missing required fields: employeeId, name, userName, password, email, mobileNumber"
-      });
-    }
-
-    // Check if username already exists
-    const checkUserSql = 'SELECT * FROM tbl_userdetails WHERE userName = ?';
-    const [existingUser] = await connection.execute(checkUserSql, [userName]);
-
-    if (existingUser.length > 0) {
-      return res.status(400).json({
-        status: "Error",
-        message: "Username already exists"
-      });
-    }
-
-    // Hash the password before saving (optional)
-    const hashedPassword = crypto.createHash('md5').update(password).digest('hex'); // Hash the password (example using MD5)
-
-    // SQL query to insert the employee
-    const sqlInsert = `
-      INSERT INTO tbl_userdetails 
-      (employeeId, name, userName, password, userType, designation, domain, dateOfJoining, mobileNumber, mobileNumber2,
-      email, email2, address, profileUrl, dateOfBirth, bankName, bankBranch, accountNo, ifscNo, salary)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    // Insert employee into the table
-    await connection.execute(sqlInsert, [
-      employeeId, name, userName, hashedPassword, userType, designation, domain, dateOfJoining, mobileNumber, mobileNumber2,
-      email, email2, address, profileUrl, dateOfBirth, bankName, bankBranch, accountNo, ifscNo, salary
-    ]);
-
-    res.status(201).json({
-      status: "Success",
-      message: "Employee added successfully"
-    });
-  } catch (error) {
-    console.error('Error adding employee:', error);
-    res.status(500).json({
-      status: "Error",
-      message: "Internal Server Error"
-    });
-  }
-};
 
 /* exports.login = async (req, res, next) => {
   const username = req.body.username;
@@ -285,7 +230,7 @@ exports.addEmployee= async (req, res) => {
   }
 }; */
 
- exports.login = async (req, res, next) => {
+exports.login = async (req, res, next) => {
   const username = req.body.username;
   const password = req.body.password;
 
@@ -294,14 +239,17 @@ exports.addEmployee= async (req, res) => {
       return res.status(400).send({ status: "Error", message: "Missing Credentials" });
     }
 
-    // Step 1: Check if the username exists
-    let sql = `SELECT u.employeeId, u.name AS employeeName, u.userName, u.userType, u.designation, 
-                      u.mobileNumber, u.email, u.profileUrl, u.domain, u.password, t.tl_id 
-               FROM tbl_userDetails u 
-               LEFT JOIN tbl_tl_managed_employees t ON u.employeeId = t.tl_id
-               WHERE u.isActive='1' AND BINARY u.userName = ?`;
+    // Step 1: Check if the username exists in attendanceConnection
+    let sql = `
+      SELECT 
+        u.employeeId, u.name AS employeeName, u.userName, u.userType, 
+        u.designation, u.mobileNumber, u.email, u.profileUrl, 
+        u.domain, u.password 
+      FROM attendance_register.tbl_userDetails u 
+      WHERE u.isActive = '1' AND BINARY u.userName = ?
+    `;
 
-    const [userResult] = await connection.execute(sql, [username]);
+    const [userResult] = await attendanceConnection.execute(sql, [username]);
 
     if (userResult.length === 0) {
       // If username is invalid
@@ -309,15 +257,18 @@ exports.addEmployee= async (req, res) => {
     }
 
     // Step 2: If username is valid, check the password
-    const sqlPasswordCheck = `SELECT u.employeeId, u.name AS employeeName, u.userName, u.userType, u.designation, 
-                                     u.mobileNumber, u.email, u.profileUrl, u.domain, t.tl_id 
-                              FROM tbl_userDetails u
-                              LEFT JOIN tbl_tl_managed_employees t ON u.employeeId = t.tl_id
-                              WHERE u.isActive='1' 
-                              AND BINARY u.userName = ? 
-                              AND u.password = MD5(?)`;
+    const sqlPasswordCheck = `
+      SELECT 
+        u.employeeId, u.name AS employeeName, u.userName, u.userType, 
+        u.designation, u.mobileNumber, u.email, u.profileUrl, 
+        u.domain 
+      FROM attendance_register.tbl_userDetails u
+      WHERE u.isActive = '1' 
+        AND BINARY u.userName = ? 
+        AND u.password = MD5(?)
+    `;
 
-    const [loginResult] = await connection.execute(sqlPasswordCheck, [username, password]);
+    const [loginResult] = await attendanceConnection.execute(sqlPasswordCheck, [username, password]);
 
     if (loginResult.length === 0) {
       // If password is incorrect but username is valid
@@ -326,14 +277,18 @@ exports.addEmployee= async (req, res) => {
 
     const userData = loginResult[0];
 
-    // Step 3: Fetch managed employees data only if the user is a Team Leader (tl_id exists)
+    // Step 3: Check if the user is a Team Leader and fetch managed employees (if tl_id exists)
     let managedEmployees = [];
-    if (userData.tl_id) {
-      const managedEmployeesSql = `SELECT u.employeeId, u.name AS employeeName 
-                                   FROM tbl_userDetails u 
-                                   JOIN tbl_tl_managed_employees m ON u.employeeId = m.employeeId 
-                                   WHERE m.tl_id = ?`;
-      const [employeesResult] = await connection.execute(managedEmployeesSql, [userData.tl_id]);
+    if (userData.userType === 'TeamLeader') {
+      const managedEmployeesSql = `
+        SELECT 
+          u.employeeId, u.name AS employeeName 
+        FROM attendance_register.tbl_userDetails u 
+        JOIN connection.tbl_tl_managed_employees m ON u.employeeId = m.employeeId 
+        WHERE m.tl_id = ?
+      `;
+
+      const [employeesResult] = await connection.execute(managedEmployeesSql, [userData.employeeId]);
       managedEmployees = employeesResult;
     }
 
@@ -347,6 +302,7 @@ exports.addEmployee= async (req, res) => {
     next(error);
   }
 };
+
  
 /* exports.verifyToken = async (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1]; // Expecting "Bearer <token>"
@@ -515,6 +471,27 @@ exports.createReport = async (req, res, next) => {
     next(error);
   }
 };
+exports.deleteReport = async (req, res, next) => {
+  const { id } = req.params; // Get the id from the URL parameter
+
+  if (!id) {
+    return res.status(400).json({ status: "Error", message: "Report ID is required" });
+  }
+
+  try {
+    const sql = 'DELETE FROM tbl_emp_reports WHERE id = ?';
+    const [result] = await connection.execute(sql, [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ status: "Error", message: "Report not found" });
+    }
+
+    res.status(200).json({ status: "Success", message: "Report deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.createIdReport = async (req, res, next) => {
   console.log(req.body)
   const { id, employeeId, reportDate, application, location, receivedDate, regNo, noOfForms, scanning, typing, photoshop, coraldraw, underPrinting, toBeDelivered, delivered, remarks } = req.body;
@@ -556,6 +533,26 @@ exports.createIdReport = async (req, res, next) => {
       const [result] = await connection.execute(sql, [employeeId, reportDate, application, location, receivedDate, regNo, noOfForms, scanning, typing, photoshop, coraldraw, underPrinting, toBeDelivered, delivered, remarks, id]);
       res.send({ status: "Success", message: "Report update successfully" });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+exports.deleteIdReport = async (req, res, next) => {
+  const { id } = req.params; // Get the id from the URL parameter
+  try {
+    // SQL query to delete the record based on the provided ID
+    const sql = `DELETE FROM tbl_idcard_reports WHERE id = ?`;
+    
+    // Execute the query
+    const [result] = await connection.execute(sql, [id]);
+    
+    // Check if any row was affected (deleted)
+    if (result.affectedRows === 0) {
+      return res.status(404).send({ status: "Error", message: "Report not found" });
+    }
+    
+    // Send a success response if the record was deleted
+    res.send({ status: "Success", message: "Report deleted successfully" });
   } catch (error) {
     next(error);
   }
@@ -611,9 +608,15 @@ exports.reportHistory_tl = async (req, res, next) => {
 
   try {
     const { tlId } = req.params; // TL ID from request params
-    const employeesSql = `SELECT employeeId FROM tbl_tl_managed_employees WHERE tl_id = ?`;
+
+    // Step 1: Fetch employee IDs managed by the TL from connection database
+    const employeesSql = `
+      SELECT employeeId 
+      FROM tbl_tl_managed_employees 
+      WHERE tl_id = ?
+    `;
     const [employeeResults] = await connection.execute(employeesSql, [tlId]);
-    
+
     const employeeIds = employeeResults
       .flatMap(emp => emp.employeeId.split(',').map(id => id.trim()))
       .filter(id => id);
@@ -625,65 +628,75 @@ exports.reportHistory_tl = async (req, res, next) => {
     const placeholders = employeeIds.map(() => '?').join(', ');
 
     if (domain === 'Development') {
+      // Step 2: Query Development reports
       const sql = `
-        SELECT r.id, r.employeeId, r.reportDetails, r.seletedProjectList, r.subCategoryList,
-               DATE_FORMAT(r.reportDate, '%d-%b-%Y') AS reportDate, u.name AS name
+        SELECT 
+          r.id, r.employeeId, r.reportDetails, r.seletedProjectList, r.subCategoryList,
+          DATE_FORMAT(r.reportDate, '%d-%b-%Y') AS reportDate, u.name AS name
         FROM tbl_emp_reports r
-        INNER JOIN tbl_userdetails u ON r.employeeId = u.employeeId
-        WHERE r.isActive = '1' AND 
-              r.employeeId IN (${placeholders}) AND 
-              r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} AND 
-              ${toDate ? `"${toDate}"` : 'CURDATE()'}
-        ORDER BY r.reportDate DESC LIMIT ${limit} OFFSET ${offset}
+        INNER JOIN attendance_register.tbl_userdetails u ON r.employeeId = u.employeeId
+        WHERE r.isActive = '1' 
+          AND r.employeeId IN (${placeholders}) 
+          AND r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} 
+          AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
+        ORDER BY r.reportDate DESC 
+        LIMIT ${limit} OFFSET ${offset}
       `;
 
       const countSql = `
         SELECT COUNT(*) AS total
         FROM tbl_emp_reports r
-        INNER JOIN tbl_userdetails u ON r.employeeId = u.employeeId
-        WHERE r.isActive = '1' AND 
-              r.employeeId IN (${placeholders}) AND 
-              r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} AND 
-              ${toDate ? `"${toDate}"` : 'CURDATE()'}
+        INNER JOIN attendance_register.tbl_userdetails u ON r.employeeId = u.employeeId
+        WHERE r.isActive = '1' 
+          AND r.employeeId IN (${placeholders}) 
+          AND r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} 
+          AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
       `;
 
       const [countResult] = await connection.execute(countSql, employeeIds);
       const totalRecords = countResult[0].total;
       const [result] = await connection.execute(sql, employeeIds);
+
       res.send({ status: "Success", totalRecords, limit, page, data: result });
     } else {
-      let sql = `
-        SELECT r.id, r.employeeId, r.application, r.location, r.receivedDate, r.regNo, r.noOfForms,
-               r.scanning, r.typing, r.photoshop, r.coraldraw, r.underPrinting, r.toBeDelivered, r.delivered, r.remarks,
-               DATE_FORMAT(r.reportDate, '%d-%b-%Y') AS reportDate, u.name AS name
+      // Step 3: Query non-Development reports
+      const sql = `
+        SELECT 
+          r.id, r.employeeId, r.application, r.location, r.receivedDate, r.regNo, r.noOfForms,
+          r.scanning, r.typing, r.photoshop, r.coraldraw, r.underPrinting, 
+          r.toBeDelivered, r.delivered, r.remarks,
+          DATE_FORMAT(r.reportDate, '%d-%b-%Y') AS reportDate, u.name AS name
         FROM report.tbl_idcard_reports r
-        INNER JOIN tbl_userdetails u ON r.employeeId = u.employeeId
-        WHERE r.isActive = '1' AND 
-              r.employeeId IN (${placeholders}) AND 
-              r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} AND 
-              ${toDate ? `"${toDate}"` : 'CURDATE()'}
-        ORDER BY r.reportDate DESC LIMIT ${limit} OFFSET ${offset}
+        INNER JOIN attendance_register.tbl_userdetails u ON r.employeeId = u.employeeId
+        WHERE r.isActive = '1' 
+          AND r.employeeId IN (${placeholders}) 
+          AND r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} 
+          AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
+        ORDER BY r.reportDate DESC 
+        LIMIT ${limit} OFFSET ${offset}
       `;
 
-      let countSql = `
+      const countSql = `
         SELECT COUNT(*) AS total
         FROM tbl_idcard_reports r
-        INNER JOIN tbl_userdetails u ON r.employeeId = u.employeeId
-        WHERE r.isActive = '1' AND 
-              r.employeeId IN (${placeholders}) AND 
-              r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} AND 
-              ${toDate ? `"${toDate}"` : 'CURDATE()'}
+        INNER JOIN attendance_register.tbl_userdetails u ON r.employeeId = u.employeeId
+        WHERE r.isActive = '1' 
+          AND r.employeeId IN (${placeholders}) 
+          AND r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'} 
+          AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
       `;
 
       const [countResult] = await connection.execute(countSql, employeeIds);
       const totalRecords = countResult[0].total;
       const [result] = await connection.execute(sql, employeeIds);
+
       res.send({ status: "Success", totalRecords, limit, page, data: result });
     }
   } catch (error) {
     next(error);
   }
 };
+
 exports.tl_managed_employees = async (req, res, next) => {
   const { tl_id, employeeId } = req.body; // Destructure tl_id and employeeId from the request body
 
@@ -691,7 +704,7 @@ exports.tl_managed_employees = async (req, res, next) => {
     // Step 1: Check if all employee IDs exist in the user details table
     const placeholders = employeeId.map(() => '?').join(', ');
     const checkSql = `SELECT COUNT(*) AS count FROM tbl_userdetails WHERE employeeId IN (${placeholders})`;
-    const [results] = await connection.execute(checkSql, employeeId);
+    const [results] = await attendanceConnection.execute(checkSql, employeeId);
 
     const count = results[0].count;
 

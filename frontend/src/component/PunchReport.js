@@ -216,6 +216,37 @@ const PunchLogTable = () => {
         },
     };
 
+    const groupedData = filteredData.reduce((acc, item) => {
+        // Group by employeeId and date
+        const date = new Date(item.logTime).toLocaleDateString();
+        const key = `${item.employeeId}-${date}`;
+        
+        if (!acc[key]) {
+            acc[key] = {
+                employeeId: item.employeeId,
+                employeeName: employeeList.find(emp => emp.employeeId === item.employeeId)?.employeeName || item.employeeId,
+                place: item.place1,
+                date: date,
+                punchIn: null,
+                punchOut: null,
+                device: item.device
+            };
+        }
+        
+        // Store Punch IN and Punch OUT separately
+        if (item.logType === 'In') {
+            acc[key].punchIn = new Date(item.logTime).toLocaleTimeString();
+        } else if (item.logType === 'Out') {
+            acc[key].punchOut = new Date(item.logTime).toLocaleTimeString();
+        }
+    
+        return acc;
+    }, {});
+    
+    // Convert grouped data back into an array
+    const groupedDataArray = Object.values(groupedData);
+    
+    
     return (
         <div style={styles.container}>
            {/*  <h2 style={styles.heading}>Punch Log Table</h2> */}
@@ -276,46 +307,60 @@ const PunchLogTable = () => {
             <div style={styles.noRecords}>{error}</div>
         ) : (
             <div style={{ maxHeight: '600px', overflowY: 'auto' }}> {/* Wrapper div for scrollable body */}
-                <table style={styles.table}>
-                    <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                        <tr>
-                            <th style={styles.th}>Employee Name</th>
-                            <th style={styles.th}>Place</th>
-                            <th style={styles.th}>Date</th>
-                            <th style={styles.th}>Punch Time</th>
-                            <th style={styles.th}>Punch Type</th>
-                            <th style={styles.th}>Device</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredData.length > 0 ? (
-                            filteredData.map((item) => (
-                                <tr key={item.id}>
-                                    <td style={{ ...styles.td, ...styles.device }}>
-                                        {employeeList.find((emp) => emp.employeeId === item.employeeId)?.employeeName || item.employeeId}
-                                    </td>
-                                    <td style={styles.td}>{item.place1}</td>
-                                    <td style={{ ...styles.td, ...styles.device }}>
-                                        {new Date(item.logTime).toLocaleDateString()}
-                                    </td>
-                                    <td style={{ ...styles.td, ...styles.device2 }}>
-                                        {new Date(item.logTime).toLocaleTimeString()}
-                                    </td>
-                                    <td style={{ ...styles.td, ...styles.punchType[item.logType] }}>
-                                        {item.logType}
-                                    </td>
-                                    <td style={{ ...styles.td, ...styles.device }}>{item.device}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="6" style={styles.noRecords}>
-                                    No records found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                 <table style={styles.table}>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+            <tr>
+                <th style={styles.th}>Employee Name</th>
+                <th style={styles.th}>Place</th>
+                <th style={styles.th}>Date</th>
+                <th style={styles.th}>Punch Time In</th>
+                <th style={styles.th}>Punch Time Out</th>
+                {/* <th style={styles.th}>Track Time</th>
+                <th style={styles.th}>Punch IN</th>
+                <th style={styles.th}>Punch OUT</th> */}
+                <th style={styles.th}>Device</th>
+            </tr>
+        </thead>
+        <tbody>
+            {groupedDataArray.length > 0 ? (
+                groupedDataArray.map((item, index) => (
+                    <tr key={index}>
+                        <td style={{ ...styles.td, ...styles.device }}>
+                            {item.employeeName}
+                        </td>
+                        <td style={styles.td}>{item.place}</td>
+                        <td style={{ ...styles.td, ...styles.device }}>
+                            {item.date}
+                        </td>
+                        <td style={{ ...styles.td, ...styles.device2 }}>
+                            {item.punchIn || ''}
+                        </td>
+                        <td style={{ ...styles.td, ...styles.device2 }}>
+                            {item.punchOut || ''}
+                        </td>
+                        {/* <td style={{ ...styles.td, ...styles.device2 }}>
+                            {item.punchOut || ''}
+                        </td>
+                        <td style={{ ...styles.td, ...styles.punchType['In'] }}>
+                            {item.punchIn ? 'IN' : ''}
+                        </td>
+                        <td style={{ ...styles.td, ...styles.punchType['Out'] }}>
+                            {item.punchOut ? 'OUT' : ''}
+                        </td> */}
+                        <td style={{ ...styles.td, ...styles.device }}>
+                            {item.device}
+                        </td>
+                    </tr>
+                ))
+            ) : (
+                <tr>
+                    <td colSpan="8" style={styles.noRecords}>
+                        No records found.
+                    </td>
+                </tr>
+            )}
+        </tbody>
+    </table>
             </div>
         )}
 

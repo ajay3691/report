@@ -8,6 +8,7 @@ const { errorHandler } = require('./errorHandler');
 
 const app = express();
 const swaggerJsDoc = YAML.load("./api.yaml");
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

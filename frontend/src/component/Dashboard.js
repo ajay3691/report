@@ -219,7 +219,7 @@ const Dashboard = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 16h6M9 8h6M19 3H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
                       </svg>
 
-                        <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Leave Status</span>
+                        <span className="flex-1 text-left ml-3 ms-3 whitespace-nowrap">Leave Approve</span>
                       </Link>
                     </li>
                     <li>

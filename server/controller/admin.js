@@ -1,9 +1,15 @@
 const {connection,attendanceConnection} = require("../dbConfig");
+const crypto = require('crypto');
+
+const hash = crypto.createHash('sha256'); // sha256 is the hashing algorithm
+hash.update('some data to hash');
+const hashedData = hash.digest('hex');
+console.log(hashedData); // Output the hash
 
 exports.employee_list = async (req, res, next) => {
   try {
     const sql = `Select *,name as employeeName from tbl_userDetails where isActive='1' and userType="employee" order by employeeId asc`;
-    const [result] = await connection.execute(sql);
+    const [result] = await attendanceConnection.execute(sql);
     let projectDetails = []
     for (let i = 0; i < result.length; i++) {
       const sql1 = `select a.project,a.subProject from tbl_projects a join tbl_employee_project_map b on a.id=b.projectId where b.employeeId="${result[i].employeeId}" AND a.isActive='1' AND b.isActive='1'`;
@@ -22,9 +28,89 @@ exports.employee_list = async (req, res, next) => {
     next(error);
   }
 };
+exports.addEmployee = async (req, res) => {
+  const {
+    employeeId, name, userName, password, userType, designation, domain, dateOfJoining,
+    mobileNumber, mobileNumber2, email, email2, address, profileUrl, dateOfBirth,
+    bankName, bankBranch, accountNo, ifscNo, salary
+  } = req.body;
+
+  try {
+    // Validate required fields
+    /* if (!employeeId || !name || !userName || !password || !email || !mobileNumber) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Missing required fields: employeeId, name, userName, password, email, mobileNumber",
+      });
+    } */
+
+    // Check if the user already exists (by username)
+    const checkUserSql = 'SELECT * FROM tbl_userdetails WHERE userName = ?';
+    const [existingUser] = await attendanceConnection.execute(checkUserSql, [userName]);
+
+    const profileUrlValue = profileUrl && profileUrl.trim() !== '' ? profileUrl : '-'; // Default profileUrl
+
+    const currentTime = new Date(); // For createdAt and updatedAt fields
+
+    if (existingUser.length > 0) {
+      // Update the existing record
+      const hashedPassword = crypto.createHash('md5').update(password).digest('hex'); // Hash password
+
+      const sqlUpdate = `
+        UPDATE tbl_userdetails
+        SET name = ?, password = ?, userType = ?, designation = ?, domain = ?, dateOfJoining = ?, mobileNumber = ?, 
+            mobileNumber2 = ?, email = ?, email2 = ?, address = ?, profileUrl = ?, dateOfBirth = ?, bankName = ?, 
+            bankBranch = ?, accountNo = ?, ifscNo = ?, salary = ?, updatedAt = ?
+        WHERE userName = ?
+      `;
+
+      await attendanceConnection.execute(sqlUpdate, [
+        name || '-', hashedPassword|| '-', userType|| '-', designation|| '-', domain|| '-', dateOfJoining|| '-', mobileNumber|| '-',
+        mobileNumber2 || null, email, email2 || null, address|| '-', profileUrlValue|| '-',
+        dateOfBirth || null, bankName || '-', bankBranch || '-', accountNo || null,
+        ifscNo || '-', salary || null, currentTime, userName,
+      ]);
+
+      return res.status(200).json({
+        status: "Success",
+        message: "Employee updated successfully",
+      });
+    } else {
+      // Insert new employee
+      const hashedPassword = crypto.createHash('md5').update(password).digest('hex'); // Hash password
+
+      const sqlInsert = `
+        INSERT INTO tbl_userdetails 
+        (employeeId, name, userName, password, userType, designation, domain, dateOfJoining, mobileNumber, 
+        mobileNumber2, email, email2, address, profileUrl, dateOfBirth, bankName, bankBranch, accountNo, ifscNo, 
+        salary, createdAt, updatedAt, isActive)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      await attendanceConnection.execute(sqlInsert, [
+        employeeId, name, userName, hashedPassword, userType, designation, domain, dateOfJoining, mobileNumber,
+        mobileNumber2 || null, email, email2 || null, address, profileUrlValue,
+        dateOfBirth || null, bankName || '-', bankBranch || '-', accountNo || null,
+        ifscNo || '-', salary || null, currentTime, currentTime, 1, // Set isActive to 1 by default
+      ]);
+
+      return res.status(201).json({
+        status: "Success",
+        message: "Employee added successfully",
+      });
+    }
+  } catch (error) {
+    console.error('Error adding or updating employee:', error);
+    res.status(500).json({
+      status: "Error",
+      message: "Internal Server Error",
+    });
+  }
+};
+
 
 exports.reportHistory_admin = async (req, res, next) => {
-  let { domain, fromDate, toDate } = req.body
+  let { domain, fromDate, toDate } = req.body;
   const page = parseInt(req.body.page) || 1; 
   const limit = parseInt(req.body.limit) || 10; 
   const offset = (page - 1) * limit;
@@ -32,9 +118,9 @@ exports.reportHistory_admin = async (req, res, next) => {
   function processResults(results) {
     const groupedResults = results.reduce((acc, row) => {
       const {
-        employeeId, id, reportDetails, selectedProjectList, subCategoryList, reportDate,name
+        employeeId, id, reportDetails, selectedProjectList, subCategoryList, reportDate, name
       } = row;
-  
+
       const report = {
         id,
         reportDetails,
@@ -43,117 +129,116 @@ exports.reportHistory_admin = async (req, res, next) => {
         employeeId,
         name
       };
-  
+
       if (!acc[reportDate]) {
         acc[reportDate] = [];
       }
-  
+
       acc[reportDate].push(report);
-  
+
       return acc;
     }, {});
-  console.log(groupedResults)
-  console.log(Object.keys(groupedResults))
     return Object.keys(groupedResults).map(reportDate => ({
       reportDate,
       reports: groupedResults[reportDate]
     }));
   }
-  
 
   try {
-    if (domain == 'Development') {
-      fromDate=fromDate||'CURDATE()';
-      toDate=toDate||'CURDATE()';
+    if (domain === 'Development') {
+      fromDate = fromDate || 'CURDATE()';
+      toDate = toDate || 'CURDATE()';
+
       const sql = `
-SELECT 
-    er.id,
-      er.employeeId,
-      er.reportDetails,
-      er.seletedProjectList,
-      er.subCategoryList,
-      DATE_FORMAT(er.reportDate, '%d-%b-%Y') AS reportDate,
-      ud.name
-FROM 
-    tbl_emp_reports er
-INNER JOIN 
-    tbl_userdetails ud 
-ON 
-    er.employeeId = ud.employeeId
-  WHERE 
-      er.isActive = '1' 
-      AND er.reportDate BETWEEN '${fromDate}' AND '${toDate}'
-  ORDER BY 
-      er.reportDate DESC LIMIT ${limit} OFFSET ${offset}
-`;
-      let countSql = `
-SELECT COUNT(*) as total
-FROM       tbl_emp_reports 
-  WHERE 
-      isActive = '1' 
-      AND reportDate BETWEEN '${fromDate}' AND '${toDate}'
-`;
+        SELECT 
+          er.id,
+          er.employeeId,
+          er.reportDetails,
+          er.seletedProjectList,
+          er.subCategoryList,
+          DATE_FORMAT(er.reportDate, '%d-%b-%Y') AS reportDate,
+          ud.name
+        FROM 
+          tbl_emp_reports er
+        INNER JOIN 
+          attendance_register.tbl_userdetails ud 
+        ON 
+          er.employeeId = ud.employeeId
+        WHERE 
+          er.isActive = '1' 
+          AND er.reportDate BETWEEN '${fromDate}' AND '${toDate}'
+        ORDER BY 
+          er.reportDate DESC LIMIT ${limit} OFFSET ${offset}
+      `;
+
+      const countSql = `
+        SELECT COUNT(*) as total
+        FROM tbl_emp_reports 
+        WHERE isActive = '1' 
+        AND reportDate BETWEEN '${fromDate}' AND '${toDate}'
+      `;
+
       const [countResult] = await connection.execute(countSql);
       const totalRecords = countResult[0].total;
+
       const [result] = await connection.execute(sql);
       const processedResults = processResults(result);
-      res.send({ status: "Success", totalRecords, limit: limit, page: page, data: processedResults });
+
+      res.send({ status: "Success", totalRecords, limit, page, data: processedResults });
+
     } else {
-      console.log("first")
-    //   let sql = `SELECT id,employeeId,application,location,receivedDate,regNo,noOfForms,scanning,typing,photoshop,coraldraw,underPrinting,toBeDelivered,delivered,remarks
-    //   ,DATE_FORMAT(reportDate, '%d-%b-%Y') AS reportDate FROM report.tbl_idcard_reports where isActive='1' AND 
-    //   reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 7 DAY) '} AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
-    // ORDER BY reportDate DESC LIMIT ${limit} OFFSET ${offset}`;
+      const sql = `
+        SELECT 
+          r.id,
+          r.employeeId,
+          e.name, 
+          r.application,
+          r.location,
+          r.receivedDate,
+          r.regNo,
+          r.noOfForms,
+          r.scanning,
+          r.typing,
+          r.photoshop,
+          r.coraldraw,
+          r.underPrinting,
+          r.toBeDelivered,
+          r.delivered,
+          r.remarks,
+          DATE_FORMAT(r.reportDate, '%d-%b-%Y') AS reportDate 
+        FROM 
+          report.tbl_idcard_reports r
+        LEFT JOIN 
+          attendance_register.tbl_userdetails e 
+        ON 
+          r.employeeId = e.employeeId 
+        WHERE 
+          r.isActive = '1'
+          AND r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 7 DAY)'}
+          AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
+        ORDER BY 
+          r.reportDate DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
 
-let sql = `
-    SELECT 
-      r.id,
-      r.employeeId,
-      e.name, 
-      r.application,
-      r.location,
-      r.receivedDate,
-      r.regNo,
-      r.noOfForms,
-      r.scanning,
-      r.typing,
-      r.photoshop,
-      r.coraldraw,
-      r.underPrinting,
-      r.toBeDelivered,
-      r.delivered,
-      r.remarks,
-      DATE_FORMAT(r.reportDate, '%d-%b-%Y') AS reportDate 
-    FROM report.tbl_idcard_reports r
-    LEFT JOIN tbl_userdetails e ON r.employeeId = e.employeeId 
-    WHERE r.isActive = '1'
-      AND r.reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 7 DAY)'}
-      AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
-    ORDER BY r.reportDate DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
-  
+      const countSql = `
+        SELECT COUNT(*) as total
+        FROM tbl_idcard_reports 
+        WHERE isActive = '1'
+        AND reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 7 DAY)'} 
+        AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
+      `;
 
-      let countSql = `
-SELECT COUNT(*) as total
-FROM tbl_idcard_reports 
-WHERE isActive='1' AND
-  reportDate BETWEEN ${fromDate ? `"${fromDate}"` : 'DATE_SUB(CURDATE(), INTERVAL 7 DAY) '} AND ${toDate ? `"${toDate}"` : 'CURDATE()'}
-`;
       const [countResult] = await connection.execute(countSql);
       const totalRecords = countResult[0].total;
+
       const [result] = await connection.execute(sql);
-      res.send({
-        status: "Success", totalRecords, limit: limit,
-        page: page, data: result
-      });
+      res.send({ status: "Success", totalRecords, limit, page, data: result });
     }
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
-
-
+};
 
 exports.create_project = async (req, res, next) => {
   const { id, projectName, subProject } = req.body;
@@ -182,7 +267,6 @@ exports.delete_project=async(req,res,next)=>{
     next(error)
   }
 }
-
 
 exports.applyLeave = async (req, res, next) => {
   const { Employee_id, userName, leaveTypes, leaveTimes, startDate, endDate, reason } = req.body;
@@ -371,37 +455,35 @@ exports.getLeaveApplications = async (req, res, next) => {
 };
  */
 exports.getLeaveRequestsAll = async (req, res, next) => {
-  const { fromDate, toDate } = req.body;
+  const { startDate, endDate } = req.body;
 
   try {
-    if (!fromDate || !toDate) {
+    if (!startDate || !endDate) {
       return res.status(400).json({
         status: "Error",
-        message: "Missing required parameters: fromDate or toDate",
+        message: "Missing required parameters: startDate or endDate",
       });
     }
 
-    const fromDateObj = new Date(fromDate);
-    const toDateObj = new Date(toDate);
+    // Format the input dates to YYYY-MM-DD
+    const formattedStartDate = new Date(startDate).toISOString().split('T')[0];
+    const formattedEndDate = new Date(endDate).toISOString().split('T')[0];
 
-    if (isNaN(fromDateObj) || isNaN(toDateObj)) {
-      return res.status(400).json({
-        status: "Error",
-        message: "Invalid date format. Please provide valid dates.",
-      });
-    }
-
-    // Fetch leave requests from 'leaverequest_form' table in the 'attendanceConnection' database
+    // SQL query to fetch leave requests from 'leaverequest_form' in attendanceConnection
     const fetchLeaveRequestsQuery = `
       SELECT 
         *
       FROM 
         leaverequest_form lr
       WHERE 
-        lr.createdAt BETWEEN ? AND ?;
+        DATE(lr.startDate) <= ? 
+        AND DATE(lr.endDate) >= ?
     `;
 
-    const [leaveRequests] = await attendanceConnection.execute(fetchLeaveRequestsQuery, [fromDateObj, toDateObj]);
+    // Fetch leave requests from 'attendanceConnection'
+    const [leaveRequests] = await attendanceConnection.execute(fetchLeaveRequestsQuery, [
+      formattedEndDate, formattedStartDate
+    ]);
 
     if (leaveRequests.length === 0) {
       return res.status(404).json({
@@ -410,29 +492,27 @@ exports.getLeaveRequestsAll = async (req, res, next) => {
       });
     }
 
-    // Fetch employee details from 'tbl_userDetails' table in the 'connection' database
+    // SQL query to fetch employee details from 'tbl_userdetails' in 'connection'
     const fetchEmployeeNamesQuery = `
       SELECT 
         employeeId, 
         name AS employeeName 
       FROM 
-        tbl_userDetails;
+        tbl_userdetails;
     `;
 
-    const [employeeDetails] = await connection.execute(fetchEmployeeNamesQuery);
-    console.log("employeeDetails", employeeDetails);
+    // Fetch employee details from 'connection'
+    const [employeeDetails] = await attendanceConnection.execute(fetchEmployeeNamesQuery);
 
     // Create a map of employeeId to employeeName from the employeeDetails
     const employeeMap = employeeDetails.reduce((acc, employee) => {
-      acc[employee.employeeId] = employee.employeeName;  // Note: ensure the property name matches exactly.
+      acc[employee.employeeId] = employee.employeeName;
       return acc;
     }, {});
-    console.log("employeeMap", employeeMap);
 
-    // Merge employee name into leaveRequests
+    // Merge employee name into leaveRequests based on Employee_id
     leaveRequests.forEach((leave) => {
-      // Check if the employeeId from leaveRequest exists in employeeMap, if so, assign the employeeName
-      leave.employeeName = employeeMap[leave.Employee_id] || "Unknown"; // Default to "Unknown" if employee is not found
+      leave.employeeName = employeeMap[leave.Employee_id] || "Unknown"; // Default to "Unknown" if employee not found
     });
 
     // Return the merged result
@@ -447,15 +527,16 @@ exports.getLeaveRequestsAll = async (req, res, next) => {
   }
 };
 
-exports.updateLeaveStatus = async (req, res, next) => {
-  const { leaveId, status, remarks } = req.body;
 
+exports.updateLeaveStatus = async (req, res, next) => {
+  const { leaveId, status, remarks } = req.body;  // 'remarks' in the payload
+   
   try {
     if (!leaveId || !status) {
       return res.status(400).json({ status: "Error", message: "Missing required parameters: leaveId or status" });
     }
 
-    const allowedStatuses = ["Accept", "Reject", "Pending"];
+    const allowedStatuses = ["Accepted", "Rejected", "Pending"];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ status: "Error", message: `Invalid status. Allowed values are: ${allowedStatuses.join(", ")}` });
     }
@@ -465,24 +546,27 @@ exports.updateLeaveStatus = async (req, res, next) => {
 
     const currentDate = new Date();
 
-    if (status === "Accept") {
+    if (status === "Accepted") {
+      // For Accepted status, we keep the 'remarks' column as is
       updateLeaveQuery = `
         UPDATE leaverequest_form 
-        SET status = ?, acceptDate = ?, remarks = ? 
+        SET status = ?, acceptDate = ?, rejectReason = ? 
         WHERE lid = ?
       `;
       queryParams = [status, currentDate, remarks !== undefined ? remarks : null, leaveId];
-    } else if (status === "Reject") {
+    } else if (status === "Rejected") {
+      // For Rejected status, save the 'remarks' field into 'rejectReason' column
       updateLeaveQuery = `
         UPDATE leaverequest_form 
-        SET status = ?, remarks = ? 
+        SET status = ?, rejectReason = ? 
         WHERE lid = ?
       `;
       queryParams = [status, remarks !== undefined ? remarks : null, leaveId];
     } else {
+      // For Pending or any other status, store 'remarks' as 'rejectReason'
       updateLeaveQuery = `
         UPDATE leaverequest_form 
-        SET status = ?, remarks = ? 
+        SET status = ?, rejectReason = ? 
         WHERE lid = ?
       `;
       queryParams = [status, remarks !== undefined ? remarks : null, leaveId];
@@ -497,7 +581,7 @@ exports.updateLeaveStatus = async (req, res, next) => {
     res.status(200).json({
       status: "Success",
       message: "Leave status updated successfully",
-      data: { leaveId, updatedStatus: status, remarks, acceptDate: status === "Accepted" ? currentDate : null }
+      data: { leaveId, updatedStatus: status, rejectReason: remarks, acceptDate: status === "Accepted" ? currentDate : null }
     });
 
   } catch (error) {
@@ -551,7 +635,6 @@ exports.getEmployeeLeaveReport = async (req, res, next) => {
     next(error);
   }
 };
-
 
 exports.dailypunch = async (req, res) => {
     const { from_date, to_date } = req.body;

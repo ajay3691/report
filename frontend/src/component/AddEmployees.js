@@ -17,7 +17,7 @@ const AddEmployee = () => {
     email: '',
     email2: '',
     address: '',
-    profileImage: null, // Changed from profileUrl to profileImage
+    profileUrl: null, // Changed from profileUrl to profileUrl
     dateOfBirth: '',
     bankName: '',
     bankBranch: '',
@@ -49,7 +49,7 @@ const AddEmployee = () => {
     }
 
     try {
-      const response = await axios.post('http://your-api-endpoint.com/addEmployee', employeeData);
+      const response = await axios.post('http://localhost:4001/addEmployee', employeeData);
       setSuccess(response.data.message);
       // Optionally reset form
       setEmployeeData({
@@ -66,7 +66,7 @@ const AddEmployee = () => {
         email: '',
         email2: '',
         address: '',
-        profileImage: null, // Changed from profileUrl to profileImage
+        profileUrl: null, // Changed from profileUrl to profileUrl
         dateOfBirth: '',
         bankName: '',
         bankBranch: '',
@@ -159,19 +159,19 @@ const AddEmployee = () => {
 
         <div className="row mb-3">
         <div className="col">
-  <label className="form-label">Profile Image</label>
-  <div className="custom-file-input">
-    <input
-      type="file"
-      name="profileImage"
-      className="form-control file-input"
-      accept="image/*"
-      onChange={handleChange}
-      id="customFile"
-    />
-    <label htmlFor="customFile" className="file-label">Choose File</label>
-  </div>
-</div>
+        <label className="form-label">Profile Image</label>
+      <div className="custom-file-input">
+        <input
+          type="file"
+          name="profileUrl"
+          className="form-control file-input"
+          accept="image/*"
+          onChange={handleChange}
+          id="customFile"
+        />
+        <label htmlFor="customFile" className="file-label">Choose File</label>
+      </div>
+   </div>
 
           <div className="col">
             <label className="form-label">Date of Birth</label>

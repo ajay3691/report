@@ -208,6 +208,28 @@ exports.createtask = async (req, res, next) => {
     next(error);
   }
 };
+exports.deleteTask = async (req, res, next) => {
+  const { id } = req.params; 
+  try {
+    const deleted = await Task.destroy({
+      where: { id },
+    });
+
+    if (deleted) {
+      res.send({
+        status: "Success",
+        message: "Task deleted successfully",
+      });
+    } else {
+      res.status(404).send({
+        status: "Failure",
+        message: "Task not found",
+      });
+    }
+  } catch (error) {
+    next(error); 
+  }
+};
 
 exports.getTaskById = async (req, res, next) => {
   const { employeeId, id } = req.params; // Get employeeId and id from route parameters

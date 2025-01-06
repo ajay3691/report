@@ -1,6 +1,9 @@
 import "./App.css";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes,Navigate  } from "react-router-dom";
 import React from "react";
+
+import { useSelector } from "react-redux";
+
 // import { useSelector } from "react-redux";
 const Login = React.lazy(() =>
   import(/* webpackPrefetch: true */ "./component/Login")
@@ -15,6 +18,9 @@ const ResetPassword = React.lazy(() =>import(/* webpackPrefetch: true */ "./comp
 
 function App() {
   // const isAuth = useSelector((state) => state.login.isAuth);
+  const { isAuth } = useSelector((state) => state.login);
+  //const isAuth = localStorage.getItem("isAuth");
+
   return (
     <div className="App">
       <header className="App-header">
@@ -31,13 +37,22 @@ function App() {
             </div>
           }
         >
-<BrowserRouter basename="/dashboard">
-            {/* {!isAuth && <Nav/>} */}
+          <BrowserRouter>
+          {/* {!isAuth && <Nav/>} */}
+          
             <Routes>
               <Route index element={<Login />} />
               <Route path="/dashboard/*" element={<Dashboard />} />
               <Route path="/forgotPassword/*" element={<ForgotPassword />} />
               <Route path="/resetPassword/*" element={<ResetPassword />} />
+                {/* Private Routes */}
+          <Route
+            path="/dashboard/*"
+            element={isAuth ? <Dashboard /> : <Navigate to="/" />}
+          />
+
+          {/* Fallback Route */}
+          <Route path="*" element={<h1>404 - Page Not Found</h1>} />
             </Routes>
           </BrowserRouter>
         </React.Suspense>
