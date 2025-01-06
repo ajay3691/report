@@ -36,13 +36,21 @@ const EmployeeList = () => {
     fetchEmployeeList();
   }, [employeeId, maxDisplayCount, page]);
 
-  const handleEdit = (id) => {
-    console.log("Editing employee with ID:", id);
+  const handleEdit = async (employeeId) => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/getEmployeeById/${employeeId}`);
+      if (response.data.status === 'Success') {
+        navigate('/dashboard/addEmployee', { state: { employee: response.data.data } });
+      }
+    } catch (error) {
+      console.error('Error fetching employee details:', error);
+    }
   };
+  
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`${process.env.REACT_APP_API_URL}/employee/${id}`);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/deleteEmployee/${id}`);
       if (response.data.status === "Success") {
         setEmployeeList(employeeList.filter((emp) => emp.id !== id));
         console.log("Deleted employee with ID:", id);
@@ -79,11 +87,14 @@ const EmployeeList = () => {
             {employeeList.length > 0 ? (
               employeeList.map((value, index) => (
                 <tr key={index} className="bg-gray-50 border-b">
-                  <td className="px-4 py-4">
+                 <td className="px-4 py-4">
                     <img
                       alt="profile pic"
                       className="w-10 h-10 rounded-full"
-                      src={value.profileUrl}
+                      // Check if the profileUrl starts with "http" to distinguish between full URLs and relative paths
+                      src={value.profileUrl.startsWith('http') ? value.profileUrl : `${process.env.REACT_APP_API_URL}/uploads/Images/${value.profileUrl}`}
+                      width={80}
+                      height={80}
                     />
                   </td>
                   <td className="px-4 py-4">{value.employeeId.toUpperCase()}</td>
@@ -92,8 +103,8 @@ const EmployeeList = () => {
                   <td className="px-4 py-4">{value.mobileNumber}</td>
                   <td className="px-4 py-4">{value.email}</td>
                   <td className="px-4 py-4 flex gap-4">
-                    <button
-                      onClick={() => handleEdit(value.id)}
+                  <button
+                      onClick={() => handleEdit(value.employeeId)} // Pass the entire employee object
                       className="text-blue-500 hover:text-blue-700"
                       title="Edit"
                     >

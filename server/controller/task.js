@@ -129,12 +129,29 @@ exports.createtask = async (req, res, next) => {
         { where: { id } }
       );
 
-      if (updated) {
-        // If the task is not completed, replicate it for the next day
-        if (
-          taskStatus.toLowerCase() !== "completed" &&
-          taskStatus.toLowerCase() !== "complete"
-        ) {
+      if (
+        taskStatus.toLowerCase() !== "completed" ||
+        taskStatus.toLowerCase() !== "complete"
+      ) {
+        try {
+          const [result] = await connection.execute(sqlInsert, [
+            employeeId, // Use the employeeId from the request
+            JSON.stringify({ report: task }), // Example structure for reportDetails
+            JSON.stringify([{ subCategory: "-" }]), // Example subCategoryList
+            JSON.stringify([{ projectName: customer }]), // Example selectedProjectList
+            date, // Report date
+          ]);
+      
+          console.log(
+            `Report successfully saved to tbl_emp_reports with Insert ID: ${result.insertId}`
+          );
+        } catch (error) {
+          console.error("Error saving report to tbl_emp_reports:", error);
+          throw new Error("Failed to save report to tbl_emp_reports.");
+        }
+      
+      
+        {
           const nextDay = new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000); // Next day
           await Task.create({
             date: nextDay,
@@ -178,13 +195,13 @@ exports.createtask = async (req, res, next) => {
       });
 
       // If the task is not completed, replicate it for the next day
-      if (
-        taskStatus.toLowerCase() !== "completed" &&
-        taskStatus.toLowerCase() !== "complete"
-      ) {
-        const nextDay = new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000); // Next day
-        await Task.create({
-          date: nextDay,
+      // if (
+      //   taskStatus.toLowerCase() !== "completed" &&
+      //   taskStatus.toLowerCase() !== "complete"
+      // ) {
+      //   const nextDay = new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000); // Next day
+       /*   await Task.create({
+          date,
           employeeId,
           customer,
           task,
@@ -195,8 +212,8 @@ exports.createtask = async (req, res, next) => {
           reasonForIncomplete,
           remarks,
           employeeName,
-        });
-      }
+        }); */
+      //}
 
       res.send({
         status: "Success",

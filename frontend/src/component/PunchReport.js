@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 const PunchLogTable = () => {
     const [data, setData] = useState([]); // State for the data
@@ -93,6 +94,121 @@ const PunchLogTable = () => {
         setFilteredData(filtered);
     }, [fromDate, toDate, selectedEmployeeId, data, punchType]);
      */
+   /*  const handleExport = () => {
+        const exportData = filteredData.map(item => ({
+            EmployeeName: employeeList.find(emp => emp.employeeId === item.employeeId)?.employeeName || item.employeeId,
+            place: item.place1,
+            Date: new Date(item.logTime).toLocaleDateString(),
+            PunchIn: item.logType === 'In' ? new Date(item.logTime).toLocaleTimeString() : '',
+            PunchOut: item.logType === 'Out' ? new Date(item.logTime).toLocaleTimeString() : '',
+            Device: item.device,
+        }));
+
+        
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'PunchLog');
+        
+        // Export as Excel file
+        XLSX.writeFile(wb, 'PunchLogData.xlsx');
+    }; */
+    /* const handleExport = () => {
+        // Group the filtered data by employee and date
+        const groupedData = filteredData.reduce((acc, item) => {
+            const date = new Date(item.logTime).toLocaleDateString();
+            const key = `${item.employeeId}-${date}`;
+    
+            if (!acc[key]) {
+                acc[key] = {
+                    employeeId: item.employeeId,
+                    employeeName: employeeList.find(emp => emp.employeeId === item.employeeId)?.employeeName || item.employeeId,
+                    place: item.place1,
+                    date: date,
+                    punchIn: '',
+                    punchOut: '',
+                    device: item.device,
+                };
+            }
+    
+            // Set Punch In and Punch Out based on the logType
+            if (item.logType === 'In') {
+                acc[key].punchIn = new Date(item.logTime).toLocaleTimeString();
+            } else if (item.logType === 'Out') {
+                acc[key].punchOut = new Date(item.logTime).toLocaleTimeString();
+            }
+    
+            return acc;
+        }, {});
+    
+        // Convert the grouped data into an array
+        const exportData = Object.values(groupedData).map(item => ({
+            EmployeeName: item.employeeName,
+            Date: item.date,
+            PunchIn: item.punchIn,
+            PunchOut: item.punchOut,
+            Device: item.device,
+            Place: item.place,
+        }));
+    
+        // Create the Excel sheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'PunchLog');
+    
+        // Export as Excel file
+        XLSX.writeFile(wb, 'PunchLogData.xlsx');
+    }; */
+    const handleExport = () => {
+        // Group the filtered data by employee and date
+        const groupedData = filteredData.reduce((acc, item) => {
+            const date = new Date(item.logTime).toLocaleDateString();
+            const key = `${item.employeeId}-${date}`;
+    
+            // Initialize a new group if not already created for this employee and date
+            if (!acc[key]) {
+                acc[key] = {
+                    employeeId: item.employeeId,
+                    employeeName: employeeList.find(emp => emp.employeeId === item.employeeId)?.employeeName || item.employeeId,
+                    place: item.place1,  // Store the initial place
+                    date: date,
+                    punchIn: '',
+                    punchOut: '',
+                    device: item.device,
+                };
+            }
+    
+            // Handle Punch In and Punch Out based on the logType
+            if (item.logType === 'In') {
+                acc[key].punchIn = new Date(item.logTime).toLocaleTimeString();
+            } else if (item.logType === 'Out') {
+                acc[key].punchOut = new Date(item.logTime).toLocaleTimeString();
+                // Update the place when PunchOut occurs
+                acc[key].place = item.place1; // Updating place on PunchOut
+            }
+    
+            return acc;
+        }, {});
+    
+        // Convert the grouped data into an array
+        const exportData = Object.values(groupedData).map(item => ({
+            EmployeeName: item.employeeName,
+            Date: item.date,
+            PunchIn: item.punchIn,
+            PunchOut: item.punchOut,
+            Device: item.device,
+            Place: item.place,  // Final place after PunchOut update
+
+        }));
+    
+        // Create the Excel sheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'PunchLog');
+    
+        // Export as Excel file
+        XLSX.writeFile(wb, 'PunchLogData.xlsx');
+    };
+    
     useEffect(() => {
         let filtered = data;
     
@@ -183,7 +299,7 @@ const PunchLogTable = () => {
         table: {
             width: '100%',
             borderCollapse: 'collapse',
-            maxHeight: '400px',
+            maxHeight: '500px',
             overflowY: 'auto',
             display: 'block',
         },
@@ -193,6 +309,7 @@ const PunchLogTable = () => {
             padding: '10px',
             textAlign: 'left',
             border: '1px solid #ddd',
+            fontSize: '18px' // Reduces the font size to 12px
         },
         td: {
             padding: '10px',
@@ -298,19 +415,35 @@ const PunchLogTable = () => {
                         <option value="Out">Out Punches</option>
                     </select>
                 </div>
+                 {/* Export Button */}
+                 <div 
+                    onClick={handleExport} 
+                    style={{
+                        display: 'inline-block',
+                        padding: '4px 18px',  // Reduced vertical padding for less height
+                        backgroundColor: '#4CAF50',
+                        color: '#fff',
+                        borderRadius: '5px',  // Rounded corners
+                        cursor: 'pointer',
+                        fontSize: '20px',  // Smaller font size
+                        textAlign: 'center',
+                        marginTop: '36px'
+                    }}
+                >
+                    Export
+                </div>
             </div>
-
             {/* Table */}
         {loading ? (
             <div style={styles.noRecords}>Loading...</div>
         ) : error ? (
             <div style={styles.noRecords}>{error}</div>
         ) : (
-            <div style={{ maxHeight: '600px', overflowY: 'auto' }}> {/* Wrapper div for scrollable body */}
+            <div style={{ maxHeight: '840px', overflowY: 'auto' }}> {/* Wrapper div for scrollable body */}
                  <table style={styles.table}>
         <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-            <tr>
-                <th style={styles.th}>Employee Name</th>
+        <tr style={{ margin: '0px' }} > {/* Adjust the height of the row */}
+        <th style={styles.th}>Employee Name</th>
                 <th style={styles.th}>Place</th>
                 <th style={styles.th}>Date</th>
                 <th style={styles.th}>Punch Time In</th>

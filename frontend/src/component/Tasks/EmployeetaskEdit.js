@@ -107,6 +107,7 @@ const AddTask = () => {
           }
         });
         setSuccessMessage('Task updated successfully');
+        navigate("/dashboard/report-history/taskList");
       } else {
         // Create new task
         await axios.post(`${process.env.REACT_APP_API_URL}/api/createtask`, formattedTaskData, {

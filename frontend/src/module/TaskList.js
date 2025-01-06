@@ -51,9 +51,9 @@ const EmployeeReportList = () => {
         };
 
         const apiEndpoint =
-          userType === "Admin" ||
+          userType === "Admin" /* ||
           userType === "developerAdmin" ||
-          userType === "idcardAdmin"
+          userType === "idcardAdmin" */
             ? `${process.env.REACT_APP_API_URL}/api/reportHistory_admin`
             : `${process.env.REACT_APP_API_URL}/api/reportHistory/${employeeId}`;
 
@@ -129,8 +129,8 @@ const EmployeeReportList = () => {
 
   return (
     <div className="container mx-auto">
-      <div date-rangepicker className="my-4 flex items-center">
-        <div className="flex">
+    <div date-rangepicker className="my-4 flex flex-col sm:flex-row items-center">
+      <div className="flex flex-col sm:flex-row">
           <input
             type="date"
             name="fromDate"
@@ -180,9 +180,7 @@ const EmployeeReportList = () => {
                   <th className="border px-4 py-2" style={{ width: "350px" }}>
                     Date
                   </th>
-                  {(userType === "Admin" ||
-                    userType === "developerAdmin" ||
-                    userType === "idcardAdmin") && (
+                  {(userType === "Admin") && (
                     <th className="border px-4 py-2" style={{ width: "150px" }}>
                       Employee Name
                     </th>
@@ -211,10 +209,10 @@ const EmployeeReportList = () => {
                   <th className="border px-4 py-2" style={{ width: "750px" }}>
                     Remarks
                   </th>
-                  {userType === "employee" && (
+                  {(userType === "employee" || userType === "Employee") && (
                     <th className="border px-4 py-2">Edit</th>
                   )}
-                  {userType === "employee" && (
+                  {(userType === "employee" || userType === "Employee") && (
                     <th className="border px-4 py-2">Delete</th>
                   )}
                 </tr>
@@ -245,7 +243,7 @@ const EmployeeReportList = () => {
                       <td className="border px-4 py-4">{item.taskStatus}</td>
                       <td className="border px-4 py-4">{item.reasonForIncomplete}</td>
                       <td className="border px-4 py-4">{item.remarks}</td>
-                      {userType === "employee" &&
+                      {userType!== "Admin" &&
                       moment(reportDate, "DD-MM-YYYY").isSame(
                         moment(),
                         "day"
@@ -259,7 +257,7 @@ const EmployeeReportList = () => {
                           </button>
                         </td>
                       )}
-                      {userType === "employee" && moment(reportDate, "DD-MM-YYYY").isSame(
+                      {userType !== "Admin" && moment(reportDate, "DD-MM-YYYY").isSame(
                         moment(),
                         "day"
                       ) && (

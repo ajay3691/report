@@ -1,5 +1,7 @@
 const {connection,attendanceConnection} = require("../dbConfig");
 const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
 
 const hash = crypto.createHash('sha256'); // sha256 is the hashing algorithm
 hash.update('some data to hash');
@@ -28,56 +30,98 @@ exports.employee_list = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+// Define the multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/Images');  // Save uploaded file to the 'uploads/Images' folder
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.fieldname + "_" + Date.now() + path.extname(file.originalname));  // Create a unique file name
+  }
+});
+
+exports.upload = multer({ storage: storage });  // Initialize multer with the storage configuration
+
+// Add Employee function (no need to use upload.single here, it's already in the route)
 exports.addEmployee = async (req, res) => {
   const {
     employeeId, name, userName, password, userType, designation, domain, dateOfJoining,
-    mobileNumber, mobileNumber2, email, email2, address, profileUrl, dateOfBirth,
-    bankName, bankBranch, accountNo, ifscNo, salary
+    mobileNumber, mobileNumber2, email, email2, address, dateOfBirth,
+    bankName, bankBranch, accountNo, ifscNo, salary ,isActive,
   } = req.body;
 
   try {
-    // Validate required fields
-    /* if (!employeeId || !name || !userName || !password || !email || !mobileNumber) {
-      return res.status(400).json({
-        status: "Error",
-        message: "Missing required fields: employeeId, name, userName, password, email, mobileNumber",
-      });
-    } */
+    const currentTime = new Date();
 
-    // Check if the user already exists (by username)
-    const checkUserSql = 'SELECT * FROM tbl_userdetails WHERE userName = ?';
-    const [existingUser] = await attendanceConnection.execute(checkUserSql, [userName]);
+    // Check if the employee exists by employeeId
+    const checkEmployeeSql = 'SELECT * FROM tbl_userdetails WHERE employeeId = ?';
+    const [existingEmployee] = await attendanceConnection.execute(checkEmployeeSql, [employeeId]);
 
-    const profileUrlValue = profileUrl && profileUrl.trim() !== '' ? profileUrl : '-'; // Default profileUrl
+    if (existingEmployee.length > 0) {
+      // If the employee exists, we fetch the current profile URL value (if any)
+      const existingProfileUrl = existingEmployee[0].profileUrl;
 
-    const currentTime = new Date(); // For createdAt and updatedAt fields
+      // Prepare update fields, only update if value is provided
+      const updatedFields = {
+        name: name || undefined,
+        userName:userName || undefined,
+        password: password ? crypto.createHash('md5').update(password).digest('hex') : undefined,
+        userType: userType || undefined,
+        designation: designation || undefined,
+        domain: domain || undefined,
+        dateOfJoining: dateOfJoining || undefined,
+        mobileNumber: mobileNumber || undefined,
+        mobileNumber2: mobileNumber2 || undefined,
+        email: email || undefined,
+        email2: email2 || undefined,
+        address: address || undefined,
+        // Only update profileUrl if a new file is uploaded, otherwise keep the existing value
+        profileUrl: req.file ? req.file.filename : existingProfileUrl,
+        dateOfBirth: dateOfBirth || undefined,
+        bankName: bankName || undefined,
+        bankBranch: bankBranch || undefined,
+        accountNo: accountNo || undefined,
+        ifscNo: ifscNo || undefined,
+        salary: salary || undefined,
+        updatedAt: currentTime,
+        isActive: isActive || 1,
+      };
 
-    if (existingUser.length > 0) {
-      // Update the existing record
-      const hashedPassword = crypto.createHash('md5').update(password).digest('hex'); // Hash password
+      // Remove fields with undefined values to avoid updating them
+      const fieldsToUpdate = Object.keys(updatedFields)
+        .filter(key => updatedFields[key] !== undefined)
+        .map(key => `${key} = ?`);
 
-      const sqlUpdate = `
-        UPDATE tbl_userdetails
-        SET name = ?, password = ?, userType = ?, designation = ?, domain = ?, dateOfJoining = ?, mobileNumber = ?, 
-            mobileNumber2 = ?, email = ?, email2 = ?, address = ?, profileUrl = ?, dateOfBirth = ?, bankName = ?, 
-            bankBranch = ?, accountNo = ?, ifscNo = ?, salary = ?, updatedAt = ?
-        WHERE userName = ?
-      `;
+      const valuesToUpdate = Object.values(updatedFields)
+        .filter(value => value !== undefined);
 
-      await attendanceConnection.execute(sqlUpdate, [
-        name || '-', hashedPassword|| '-', userType|| '-', designation|| '-', domain|| '-', dateOfJoining|| '-', mobileNumber|| '-',
-        mobileNumber2 || null, email, email2 || null, address|| '-', profileUrlValue|| '-',
-        dateOfBirth || null, bankName || '-', bankBranch || '-', accountNo || null,
-        ifscNo || '-', salary || null, currentTime, userName,
-      ]);
+      if (fieldsToUpdate.length > 0) {
+        const sqlUpdate = `
+          UPDATE tbl_userdetails
+          SET ${fieldsToUpdate.join(', ')}
+          WHERE employeeId = ?
+        `;
 
-      return res.status(200).json({
-        status: "Success",
-        message: "Employee updated successfully",
-      });
+        await attendanceConnection.execute(sqlUpdate, [...valuesToUpdate, employeeId]);
+
+        return res.status(200).json({
+          status: "Success",
+          message: "Employee updated successfully",
+        });
+      } else {
+        return res.status(400).json({
+          status: "Error",
+          message: "No valid fields to update.",
+        });
+      }
     } else {
       // Insert new employee
-      const hashedPassword = crypto.createHash('md5').update(password).digest('hex'); // Hash password
+      const hashedPassword = crypto.createHash('md5').update(password).digest('hex');  // Hash password
+
+      const profileUrlValue = req.file ? req.file.filename : '-';  // Set profileUrl if file is uploaded
 
       const sqlInsert = `
         INSERT INTO tbl_userdetails 
@@ -88,10 +132,10 @@ exports.addEmployee = async (req, res) => {
       `;
 
       await attendanceConnection.execute(sqlInsert, [
-        employeeId, name, userName, hashedPassword, userType, designation, domain, dateOfJoining, mobileNumber,
-        mobileNumber2 || null, email, email2 || null, address, profileUrlValue,
+        employeeId || '-', name || '-', userName || '-', hashedPassword || '-', userType || '-', designation || '-', domain || '-', dateOfJoining || '-', mobileNumber || '-',
+        mobileNumber2 || null, email || '-', email2 || null, address || '-', profileUrlValue || '-',
         dateOfBirth || null, bankName || '-', bankBranch || '-', accountNo || null,
-        ifscNo || '-', salary || null, currentTime, currentTime, 1, // Set isActive to 1 by default
+        ifscNo || '-', salary || null, currentTime, currentTime, isActive || 1, // Set isActive to 1 by default
       ]);
 
       return res.status(201).json({
@@ -107,6 +151,68 @@ exports.addEmployee = async (req, res) => {
     });
   }
 };
+
+
+exports.getEmployeeById = async (req, res) => {
+  const { employeeId } = req.params;
+
+  try {
+    const sql = 'SELECT * FROM tbl_userdetails WHERE employeeId = ?';
+    const [result] = await attendanceConnection.execute(sql, [employeeId]);
+
+    if (result.length > 0) {
+      return res.status(200).json({
+        status: 'Success',
+        data: result[0],
+      });
+    } else {
+      return res.status(404).json({
+        status: 'Error',
+        message: 'Employee not found',
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching employee:', error);
+    return res.status(500).json({
+      status: 'Error',
+      message: 'Internal Server Error',
+    });
+  }
+};
+
+// Delete Employee function
+exports.deleteEmployee = async (req, res) => {
+  const { id } = req.params; // Get the employee ID from the request parameters
+
+  try {
+    // Check if the employee exists
+    const checkEmployeeSql = 'SELECT * FROM tbl_userdetails WHERE id = ?';
+    const [employee] = await attendanceConnection.execute(checkEmployeeSql, [id]);
+
+    if (employee.length === 0) {
+      return res.status(404).json({
+        status: "Error",
+        message: "Employee not found",
+      });
+    }
+
+    // Delete the employee
+    const deleteEmployeeSql = 'DELETE FROM tbl_userdetails WHERE id = ?';
+    await attendanceConnection.execute(deleteEmployeeSql, [id]);
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Employee deleted successfully",
+    });
+  } catch (error) {
+    console.error('Error deleting employee:', error);
+    res.status(500).json({
+      status: "Error",
+      message: "Internal Server Error",
+    });
+  }
+};
+
 
 
 exports.reportHistory_admin = async (req, res, next) => {

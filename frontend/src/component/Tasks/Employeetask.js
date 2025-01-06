@@ -66,6 +66,9 @@ const AddTask = () => {
         }
       });
       setSuccessMessage('Task created successfully');
+      alert('Task added successfully!');
+      navigate("/dashboard/report-history/taskList");
+
       /* navigate('/employeeDashboard'); */
       setErrorMessage('');
       setTaskData({

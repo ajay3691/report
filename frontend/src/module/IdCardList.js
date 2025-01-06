@@ -141,6 +141,7 @@ const IdCardList = () => {
   const handlePageChange = (newPage) => {
     setPage(newPage);
   };
+
   const handleDelete = async (id) => {
     try {
       const response = await axios.post(
@@ -157,6 +158,7 @@ const IdCardList = () => {
       alert("An error occurred while deleting the record");
     }
   };
+
   const totalPages = Math.ceil(totalRecord / 20);
 
   const groupedIdCardList = filteredIdCardList.reduce((acc, curr) => {
@@ -174,16 +176,16 @@ const IdCardList = () => {
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <>
-      <div date-rangepicker className="my-4 flex items-center">
-        <div className="flex">
+    <div className="container mx-auto">
+      <div date-rangepicker className="my-4 flex flex-col sm:flex-row items-center">
+        <div className="flex flex-col sm:flex-row">
           <input
             type="date"
             name="fromDate"
             value={fromDate}
             onChange={handleDateChange}
             max={today}
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-auto p-2.5 mr-2 mb-2 sm:mb-0"
           />
           <input
             type="date"
@@ -191,10 +193,10 @@ const IdCardList = () => {
             value={toDate}
             onChange={handleDateChange}
             max={today}
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 mr-2"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-auto p-2.5 mr-2 mb-2 sm:mb-0"
           />
           {userType === "Admin" && (
-            <div className="flex items-center">
+           <div className="flex items-center">
               <label htmlFor="employee" className="mr-2 text-sm text-gray-700">
                 Select Employee:
               </label>
@@ -221,7 +223,7 @@ const IdCardList = () => {
           <table className="w-full text-sm text-left rtl:text-right text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-slate-200 sticky top-0">
               <tr>
-                {(userType === "employee"
+                {(userType === "employee" || "Employee"
                   ? employeeTableHeaders
                   : adminTableHeaders
                 ).map((title, index) => (
@@ -270,26 +272,25 @@ const IdCardList = () => {
                         <td className="px-4 py-3">{value.underPrinting}</td>
                         <td className="px-4 py-3">{value.toBeDelivered}</td>
                         <td className="px-4 py-3">{value.delivered}</td>
-                        {userType === "employee" && moment(reportDate, "DD-MM-YYYY").isSame(
-                        moment(),
-                        "day"
-                      ) && (
-                      <td className="px-4 py-3">
-                        <button onClick={() => handleEdit(value.id)}>
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                      </td>
-                    )}
-                    {userType === "employee" && moment(reportDate, "DD-MM-YYYY").isSame(
-                        moment(),
-                        "day"
-                      ) && (
-                    <td className="px-4 py-3">
-                    <button onClick={() => handleDelete(value.id)}>
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </td>
-                    )}
+                        {userType !== "Admin" && (
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => handleEdit(value.id)}
+                            >
+                              <FontAwesomeIcon icon={faEdit} />
+                            </button>
+                          </td>
+                        )}
+                        {userType !== "Admin" && (
+                          <td className="px-4 py-3">
+                            <button
+                             
+                              onClick={() => handleDelete(value.id)}
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ));
                   }
@@ -298,11 +299,8 @@ const IdCardList = () => {
             ) : (
               <tbody>
                 <tr>
-                  <td
-                    colSpan={userType === "Admin" ? adminTableHeaders.length : employeeTableHeaders.length}
-                    className="text-center px-4 py-3"
-                  >
-                    No records found
+                  <td colSpan={userType === "Admin" ? 16 : 15} className="text-center">
+                    No data available
                   </td>
                 </tr>
               </tbody>
@@ -310,32 +308,9 @@ const IdCardList = () => {
           </table>
         </div>
       ) : (
-        <p className="text-center">No data available for the selected employee</p>
+        <div className="text-center text-gray-500">Loading...</div>
       )}
-
-      {/* Pagination controls */}
-      <div className="flex justify-between items-center mt-4">
-        <button
-          onClick={() => handlePageChange(page > 1 ? page - 1 : 1)}
-          disabled={page === 1}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          onClick={() =>
-            handlePageChange(page < totalPages ? page + 1 : totalPages)
-          }
-          disabled={page === totalPages}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
-    </>
+    </div>
   );
 };
 

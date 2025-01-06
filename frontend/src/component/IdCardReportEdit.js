@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-
+import {useNavigate}from 'react-router-dom'
 const toCamelCase = (str) => str.toLowerCase().replace(/([-_\s]+[a-z])/g, (match) => match.toUpperCase().replace(/[-_\s]/g, ""));
 
 const InputField = ({ label, type, value, handleInputChange, max }) => {
@@ -59,6 +59,7 @@ const IdCardReport = () => {
   
   const [application, setApplication] = useState([]);
   const [location, setLocation] = useState([]);
+  const navigate = useNavigate();
 
   const formTwo = ["Scanning", "Typing", "Photoshop", "Coraldraw", "Under Printing", "To be Delivered", "Delivered"];
 
@@ -140,6 +141,7 @@ const IdCardReport = () => {
       const { status } = response.data;
       if (status === "Success") {
         alert("Data updated successfully");
+        navigate("/dashboard/report-history/id-card-report");
       }
     } catch (error) {
       console.error("Network error:", error);

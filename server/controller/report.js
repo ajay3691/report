@@ -444,20 +444,29 @@ WHERE isActive='1' AND
 
 exports.createReport = async (req, res, next) => {
   console.log(req.body)
-  const { id, employeeId, reportDetails, subCategoryList, seletedProjectList, reportDate } = req.body;
+  const { id, employeeId, reportDetails, subCategoryList, seletedProjectList, reportDate,review  } = req.body;
   try {
     const sql1=`select count(*) as total from tbl_emp_reports where date(created_at)=curdate()`;
     const [total] = await connection.execute(sql1)
     console.log(total)
     // if(total[0].total>1) throw "Already exists..."
 
-    const data = { employeeId, reportDetails }
+    const data = { employeeId, reportDetails ,review }
     const reportDetailsString = JSON.stringify(reportDetails);
     const subCategoryListString = JSON.stringify(subCategoryList);
     const seletedProjectListString = JSON.stringify(seletedProjectList);
+    const reviewString = JSON.stringify(review); 
+
     if (id) {
-      const sql = `UPDATE tbl_emp_reports SET employeeId=?, reportDetails=?,subCategoryList=?,seletedProjectList=?,reportDate=? WHERE id=?`;
-      const [result] = await connection.execute(sql, [employeeId, reportDetailsString, subCategoryListString, seletedProjectListString, reportDate, id]);
+      const sql = `UPDATE tbl_emp_reports SET employeeId=?, reportDetails=?,subCategoryList=?,seletedProjectList=?,reportDate=?,review=? WHERE id=?`;
+      const [result] = await connection.execute(sql, [
+        employeeId, 
+        reportDetailsString, 
+        subCategoryListString,
+         seletedProjectListString, 
+         reportDate,
+         reviewString.
+          id]);
       data.id = id
     } else {
       const sql = 'INSERT INTO tbl_emp_reports (employeeId,reportDetails ,subCategoryList,seletedProjectList,reportDate) VALUES (?,?,?,?, ?)';
@@ -471,6 +480,26 @@ exports.createReport = async (req, res, next) => {
     next(error);
   }
 };
+// Assuming you're using Express.js
+
+exports.updateReview = async (req, res, next) => {
+  const {  review } = req.body;
+  const { id} = req.params;
+  
+  try {
+    const sql = `UPDATE tbl_emp_reports SET review = ? WHERE id = ?`;
+    const [result] = await connection.execute(sql, [review, id]);
+
+    if (result.affectedRows === 0) {
+      throw new Error("Report not found");
+    }
+
+    res.send({ status: "Success", message: "Review updated successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.deleteReport = async (req, res, next) => {
   const { id } = req.params; // Get the id from the URL parameter
 

@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import {useNavigate} from 'react-router-dom'
 
 const EmployeeReport = () => {
   const { employeeId } = useSelector((state) => state.login.userData);
@@ -10,6 +11,8 @@ const EmployeeReport = () => {
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
   const [todayReportDetail, setTodayReportDetail] = useState([]);
+  const navigate = useNavigate();
+
 
   console.log(todayReportDetail);
   useEffect(() => {
@@ -130,6 +133,9 @@ const EmployeeReport = () => {
         setReportDetails([]);
         setSelectedProjectList([]);
         setSubCategoryList([]);
+        alert('Report added successfully!');
+        navigate("/dashboard/report-history");
+
       }
     } catch (error) {
       console.error("Network error:", error);

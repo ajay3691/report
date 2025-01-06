@@ -113,9 +113,8 @@ const EmployeeReportList = () => {
   };
   return (
     <div className="container mx-auto">
-      {/* <h2 className="text-2xl font-bold mb-4">Report List</h2> */}
-      <div date-rangepicker className="my-4 flex items-center">
-        <div className="flex">
+    <div date-rangepicker className="my-4 flex flex-col sm:flex-row items-center">
+      <div className="flex flex-col sm:flex-row">
         <input
           type="date"
           name="fromDate"
@@ -306,7 +305,7 @@ const EmployeeReportList = () => {
                         </button>
                       </td>
                     )} */}
-                    {userType === "employee" && moment(reportDate, "DD-MM-YYYY").isSame(
+                    {(userType === "employee" || userType === "Employee")  && moment(reportDate, "DD-MM-YYYY").isSame(
                         moment(),
                         "day"
                       ) && (

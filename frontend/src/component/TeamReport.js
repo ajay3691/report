@@ -24,7 +24,7 @@ const ReportHistory = () => {
             </li>
             <li>
               <Link to="/dashboard/teamReport/taskList" className={location.pathname === "/dashboard/teamReport/taskList" ? "underline" : ""}>
-                Employee Task
+                Daily Task
               </Link>
             </li>
           </ul>

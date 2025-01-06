@@ -55,6 +55,7 @@
 @keyframes rectangleOneAnim {
   0% {
     height: 15px;
+    background-color: #28661a;
   }
 
   40% {

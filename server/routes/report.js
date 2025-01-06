@@ -9,6 +9,7 @@ router.post('/resetPassword',reports.resetPassword);
 
 router.post('/login',reports.login);
 router.post('/appId',reports.appId);
+router.post('/updateReview/:id',reports.updateReview);
 router.post('/locationId/:projectId',reports.locationId);
 router.post('/get_id_report/:employeeId',reports.idReportDetails);
 router.post('/post_id_report',reports.createIdReport);

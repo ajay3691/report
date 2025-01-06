@@ -11,7 +11,27 @@ const LeaveApplications = () => {
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [employees, setEmployees] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState(""); // Track selected status for filtering
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  // Update window width when the window is resized
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  const leaveListStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+    marginTop: windowWidth < 600 ? "200px" : "100px", // Adjust margin-top based on screen size
+    overflowY: "auto", // Enables scrolling if the list gets too long
+    maxHeight: "70vh", // Limit the height to 70% of the viewport
+    padding: "0 16px", // Add some horizontal padding for better spacing on all screens
+    boxSizing: "border-box", // Ensures padding doesn't affect overall width
+  };
   const fetchLeaveApplications = (startDate, endDate, employeeName = "") => {
     axios
       .post(`${process.env.REACT_APP_API_URL}/getLeaveRequestsAll`, {
@@ -102,8 +122,9 @@ const LeaveApplications = () => {
   
   return (
     <div style={containerStyle}>
-      {/* Fixed Date Picker Section */}
-      <div style={filterContainerStyle}>
+      <div>
+ {/* Fixed Date Picker Section */}
+ <div style={filterContainerStyle}>
         <div style={filterItemStyle}>
           <label htmlFor="fromDate">From Date:</label>
           <input
@@ -127,7 +148,7 @@ const LeaveApplications = () => {
         </div>
 
         <div style={filterItemStyle}>
-        <label htmlFor="employee" style={{ marginRight: "10px" }}> All :</label>
+        <label htmlFor="employee" style={{ marginRight: "0px" }}> All :</label>
         <select
             id="employee"
             value={selectedEmployee}
@@ -142,24 +163,27 @@ const LeaveApplications = () => {
             ))}
           </select>
         </div>
+        <div style={filterItemStyle}>
+  <label htmlFor="status" style={{ marginRight: "0px" }}>Status:</label>
+  <select
+    id="status"
+    value={selectedStatus}
+    onChange={(e) => setSelectedStatus(e.target.value)}
+    style={dropdownStyle1}  // You can reuse your existing dropdownStyle here
+  >
+    <option value="Pending">Pending</option>
+    <option value="Accepted">Accepted</option>
+    <option value="Rejected">Rejected</option>
+  </select>
+</div>
+
       </div>
 
       {/* Status Filter Buttons */}
-      <div style={statusFilterContainerStyle}>
-        {["Pending", "Accepted", "Rejected"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setSelectedStatus(status)}
-            style={{
-              ...statusButtonStyle,
-              ...(selectedStatus === status ? selectedButtonStyle : defaultButtonStyle),
-            }}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
+     
 
+      </div>
+     
       {/* Leave Applications Display */}
       <div style={leaveListStyle}>
         {leaveApplications.length === 0 ? (
@@ -236,6 +260,108 @@ const LeaveApplications = () => {
   );
 };
 
+
+const filterContainerStyle = {
+  position: "fixed",
+  top: "10px",    // Added top spacing for the filter container
+  left: "55%",    // Center the container horizontally
+  transform: "translateX(-50%)",
+  width: "90%",   // Take up most of the screen width
+  backgroundColor: "#fff",  // White background for clarity
+  borderRadius: "10px", // Rounded corners
+  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // Subtle shadow for depth
+  padding: "20px",  // Add padding inside the container
+  zIndex: 10,     // Ensure it's on top of other elements
+  display: "flex", 
+  flexWrap: "wrap", // Wrap items on smaller screens
+  justifyContent: "center", // Center the items inside the container
+};
+
+const filterItemStyle = {
+  margin: "3px",  // Space between filter items
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start", // Align items to the left
+  width: "auto",  // Flexible width for responsiveness
+};
+const filterItemStyle1 = {
+  margin: "5px",  // Space between filter items
+  display: "flex",
+  flexDirection: "row",
+  alignItems: "flex-start", // Align items to the left
+  width: "auto",  // Flexible width for responsiveness
+};
+const dropdownStyle1 = {
+  width: "200px", // Adjust the width as needed
+  padding: "8px",
+  marginTop: "5px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
+  fontSize: "14px",
+};
+
+
+
+const inputStyle = {
+  width: "200px",
+  padding: "8px",
+  marginTop: "5px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
+  fontSize: "14px",
+};
+
+const dropdownStyle = {
+  width: "200px",
+  padding: "8px",
+  marginTop: "5px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
+  fontSize: "14px",
+};
+
+const statusButtonStyle = {
+  padding: "10px 20px",
+  margin: "5px",
+  fontSize: "14px",
+  cursor: "pointer",
+  borderRadius: "5px",
+  border: "none",
+  transition: "background-color 0.3s ease, color 0.3s ease", // Smooth transition for hover effect
+};
+
+const selectedButtonStyle = {
+  backgroundColor: "#007bff",  // Blue color for selected state
+  color: "#fff",  // White text
+};
+
+const defaultButtonStyle = {
+  backgroundColor: "#f8f9fa",  // Light grey for unselected state
+  color: "#333",  // Dark text color
+};
+
+// Media query for responsiveness
+const mobileStyles = {
+  "@media (max-width: 768px)": {
+    filterContainerStyle: {
+      width: "100%", // Full width on mobile
+      left: "0",  // Align to the left side on mobile
+      transform: "none",  // Remove the translate effect
+      top: "10px", // Keep some spacing from the top
+    },
+    inputStyle: {
+      width: "100%",  // Full width for inputs on mobile
+    },
+    dropdownStyle: {
+      width: "100%",  // Full width for select on mobile
+    },
+    statusButtonStyle: {
+      width: "100%",  // Full width for buttons on mobile
+      marginBottom: "10px",  // Add margin between buttons
+    },
+  },
+};
+
 const containerStyle = {
   padding: "16px",
   maxWidth: "900px",
@@ -243,53 +369,17 @@ const containerStyle = {
   paddingTop: "40px",
 };
 
-const leaveListStyle = {
+/* const leaveListStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "16px",
-  marginTop: "70px",
+  marginTop: windowWidth < 600 ? "200px" : "100px", // Adjust margin-top based on screen size
   overflowY: "auto", // Enables scrolling if the list gets too long
-  maxHeight: "70vh", // Limit the height to 60% of the viewport
-};
+  maxHeight: "70vh", // Limit the height to 70% of the viewport
+  padding: "0 16px", // Add some horizontal padding for better spacing on all screens
+  boxSizing: "border-box", // Ensures padding doesn't affect overall width
+}; */
 
-const filterContainerStyle = {
-  position: "fixed",
-  top: "20px",
-  left: "60%",
-  transform: "translateX(-50%)",
-  padding: "8px",
-  backgroundColor: "#fff",
-  borderRadius: "8px",
-  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  zIndex: 10,
-  display: "flex",
-  justifyContent: "space-between",
-  gap: "8px",
-  width: "60%",
-  flexWrap: "wrap",
-  boxSizing: "border-box", // Ensures padding and border are included in width
-};
-
-const filterItemStyle = {
-  flex: "1",
-  minWidth: "200px",
-  gap: "16px",      
-};
-
-const inputStyle = {
-  padding: "8px",
-  borderRadius: "6px",
-  border: "1px solid #ccc",
-  width: "150px",
-};
-
-const dropdownStyle = {
-  padding: "8px",
-  borderRadius: "6px",
-  border: "1px solid #ccc",
-  fontSize: "14px",
-  minWidth: "180px",
-};
 
 const cardStyle = {
   backgroundColor: "#fff",
@@ -380,21 +470,6 @@ const statusFilterContainerStyle = {
   zIndex: 5,
 };
 
-const statusButtonStyle = {
-  flex: 1, // Make buttons take equal width
-  padding: "8px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "14px",
-};
 
-const selectedButtonStyle = {
-  backgroundColor: "#0400ff",
-  color: "white",
-};
-
-const defaultButtonStyle = {
-  backgroundColor: '#e0e0e0',
-};
 
 export default LeaveApplications;
